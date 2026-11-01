@@ -1,0 +1,6 @@
+{
+  "name": "poistka-audit",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-11-01",
+  "observability": { "enabled": false }
+}
