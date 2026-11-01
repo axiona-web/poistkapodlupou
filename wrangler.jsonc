@@ -4,5 +4,8 @@
   "compatibility_date": "2026-11-01",
   "observability": {
     "enabled": false
+  },
+  "vars": {
+    "ANTHROPIC_MODEL": "claude-sonnet-5-5"
   }
 }
