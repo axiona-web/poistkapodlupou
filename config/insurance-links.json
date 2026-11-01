@@ -1,0 +1,14 @@
+{
+  "provider": "najpoistenie.sk",
+  "baseUrl": "https://www.najpoistenie.sk",
+  "layout": "simple",
+  "commissionCode": "164960001",
+  "commissionCodeStatus": "temporary",
+  "products": [
+    { "id": "pzp", "label": "PZP", "path": "/pzp-povinne-zmluvne-poistenie/" },
+    { "id": "kasko", "label": "Havarijné poistenie", "path": "/havarijne-poistenie/" },
+    { "id": "majetok", "label": "Poistenie majetku", "path": "/poistenie-domu-bytu-domacnosti/" },
+    { "id": "cestovne", "label": "Cestovné poistenie", "path": "/cestovne-poistenie/" },
+    { "id": "zodpovednost-zamestnanca", "label": "Zodpovednosť zamestnanca za škodu", "path": "/poistenie-zodpovednosti-zamestnanca-za-skodu/" }
+  ]
+}

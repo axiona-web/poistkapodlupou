@@ -1,0 +1,16 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+node_modules/
+outputs/
+zdielany-chat-poistenie.md
+PROJEKT.md
+UX-ANALYZA.md
+.codex/
+.agents/
+# Unused design alternatives retained locally
+web/assets/pzp-car.png
+web/assets/kasko-car.png
+web/assets/car.svg
+web/assets/hero.svg
