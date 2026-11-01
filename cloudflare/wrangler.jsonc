@@ -1,6 +1,8 @@
 {
-  "name": "poistka-audit",
+  "name": "poistkapodlupou",
   "main": "worker.mjs",
   "compatibility_date": "2026-11-01",
-  "observability": { "enabled": false }
+  "observability": {
+    "enabled": false
+  }
 }
