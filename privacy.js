@@ -57,7 +57,7 @@ function privacyPage() {
   const purposes=[
    ['Zobrazenie webu','IP adresa, typ prehliadača, čas požiadavky','Oprávnený záujem na bezpečnej prevádzke webu, čl. 6 ods. 1 písm. f)','Krátkodobé technické záznamy poskytovateľa hostingu'],
    ['Vaše nastavenia','Voľba motívu a súhlasu s kalkulačkami, iba vo vašom prehliadači','Nevyhnutné pre fungovanie webu','Pozri <a href="#/cookies">Cookies</a>'],
-   ['Odpoveď na vašu otázku (e-mail, kontakt)','Meno, e-mail, telefón, obsah správy','Opatrenia pred uzavretím zmluvy na vašu žiadosť, čl. 6 ods. 1 písm. b)','1 rok od poslednej komunikácie, ak nevznikne zmluvný vzťah'],
+   ['Odpoveď na vašu otázku (e-mail, kontaktný formulár)','Meno, e-mail, telefón, téma a obsah správy','Opatrenia pred uzavretím zmluvy na vašu žiadosť, čl. 6 ods. 1 písm. b)','1 rok od poslednej komunikácie, ak nevznikne zmluvný vzťah'],
    ['Dopyt na životné poistenie','Vek, pracovné postavenie, druh práce, želané krytie a rozpočet, ak nám ich pošlete e-mailom','Opatrenia pred uzavretím zmluvy na vašu žiadosť, čl. 6 ods. 1 písm. b)','1 rok od poslednej komunikácie, ak nevznikne zmluvný vzťah'],
    ['Krátky audit poistky (dotazník)','Odpovede a sumy, ktoré zadáte','Údaje sa nikam neodosielajú, zostávajú v otvorenej stránke','Do zatvorenia alebo opustenia auditu'],
    ['Čítanie nahratej zmluvy','Súbor, ktorý vyberiete, a typ poistenia','Váš súhlas, čl. 6 ods. 1 písm. a)','Dokument neukladáme; spracuje sa iba počas čítania'],
@@ -67,7 +67,7 @@ function privacyPage() {
   const recipients=[
    ['Websupport, s. r. o.','E-mailové schránky na doméne poistkapodlupou.sk','Slovensko'],
    ['GitHub, Inc.','Hosting webu (GitHub Pages)','USA'],
-   ['Cloudflare, Inc.','Prenos dokumentu na prečítanie, uloženie recenzií na schválenie a ochrana pred zneužitím','USA'],
+   ['Cloudflare, Inc.','Odoslanie kontaktného formulára e-mailom, prenos dokumentu na prečítanie, uloženie recenzií na schválenie a ochrana pred zneužitím','USA'],
    ['Anthropic, PBC','Prečítanie nahratej zmluvy umelou inteligenciou','USA'],
    ['Finportal, a. s.','Samostatný finančný agent pri sprostredkovaní, prevádzkovateľ kalkulačiek','Slovensko']
   ];
