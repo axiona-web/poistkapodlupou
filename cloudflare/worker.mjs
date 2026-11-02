@@ -91,7 +91,7 @@ export async function contactRoute(request,env,connect){
  const to=m.topic==='Úver alebo hypotéka'?(env.CONTACT_FINANCE_TO||'dominik@poistkapodlupou.sk'):(env.CONTACT_TO||'ahoj@poistkapodlupou.sk');
  const text=[`Nová správa z webu poistkapodlupou.sk`,``,`Meno: ${m.name}`,`E-mail: ${m.email}`,`Telefón: ${m.phone||'-'}`,`Téma: ${m.topic}`,``,`Správa:`,m.message,``,`---`,`Odpovedzte priamo na tento e-mail, odpoveď pôjde odosielateľovi.`].join('\n');
  try{await sendMail({host:env.SMTP_HOST,port:Number(env.SMTP_PORT||465),user:env.SMTP_USER,pass:env.SMTP_PASS,to,replyTo:m.email,fromName:'Poistka pod Lupou – web',subject:`Web: ${m.topic} – ${m.name}`,text},connect||(await import('cloudflare:sockets')).connect);}
- catch(e){console.log('contact_send_failed',String(e&&e.message||e).slice(0,60));return json({error:'send_failed'},502);}
+ catch(e){const step=String(e&&e.message||e).replace(/[^a-z0-9_ :.-]/gi,'').slice(0,60);console.log('contact_send_failed',step);return json({error:'send_failed',step},502);}
  return json({ok:true});
 }
 async function handle(request,env){

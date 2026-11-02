@@ -30,11 +30,12 @@ export async function sendMail(options, connect) {
   const reader = socket.readable.getReader();
   const dec = new TextDecoder();
   let buffer = '';
+  let lastText = '';
   async function reply() {
     for (;;) {
       const lines = buffer.split('\r\n');
       for (let i = 0; i < lines.length - 1; i++) {
-        if (/^\d{3} /.test(lines[i])) { buffer = lines.slice(i + 1).join('\r\n'); return Number(lines[i].slice(0, 3)); }
+        if (/^\d{3} /.test(lines[i])) { lastText = lines.slice(0, i + 1).join('\n'); buffer = lines.slice(i + 1).join('\r\n'); return Number(lines[i].slice(0, 3)); }
       }
       const { value, done } = await reader.read();
       if (done) throw Error('smtp_closed');
@@ -46,9 +47,13 @@ export async function sendMail(options, connect) {
   try {
     await expect(220, 'greeting');
     await send(`EHLO ${user.split('@')[1]}`); await expect(250, 'ehlo');
-    await send('AUTH LOGIN'); await expect(334, 'auth');
-    await send(b64(user)); await expect(334, 'user');
-    await send(b64(pass)); await expect(235, 'pass');
+    if (/AUTH[ =][^\n]*PLAIN/i.test(lastText)) {
+      await send('AUTH PLAIN ' + b64('\u0000' + user + '\u0000' + pass)); await expect(235, 'plain');
+    } else {
+      await send('AUTH LOGIN'); await expect(334, 'auth');
+      await send(b64(user)); await expect(334, 'user');
+      await send(b64(pass)); await expect(235, 'pass');
+    }
     await send(`MAIL FROM:<${user}>`); await expect(250, 'from');
     await send(`RCPT TO:<${to}>`); await expect(250, 'rcpt');
     await send('DATA'); await expect(354, 'data');
