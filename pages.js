@@ -3,9 +3,9 @@
 const FINPORTAL_EMBED = {origin:'https://iframe.finportal.app', attribution:'5956', script:'https://iframe.finportal.app/scripts.js'};
 // Legal identity of the intermediaries shown on the site (NBS register).
 const INTERMEDIARIES={
- poistenie:{name:'Mgr. Alexandra Čurillová, s. r. o.',ico:'54913748',seat:'Hutnícka 2715/14, 052 01 Spišská Nová Ves',reg:'273149',sectors:['poistenie alebo zaistenie']},
+ poistenie:{name:'Mgr. Alexandra Čurillová, s.\u00a0r.\u00a0o.',ico:'54913748',seat:'Hutnícka 2715/14, 052 01 Spišská Nová Ves',reg:'273149',sectors:['poistenie alebo zaistenie']},
  financie:{name:'Ing. Martin Dominik s.r.o.',ico:'36597961',seat:'Za Kaštieľom 1308/2, 053 11 Smižany',reg:'281061',sectors:['poistenie alebo zaistenie','poskytovanie úverov, úverov na bývanie a spotrebiteľských úverov','kapitálový trh','doplnkové dôchodkové sporenie','starobné dôchodkové sporenie']},
- proposer:{name:'Finportal, a. s.',reg:'119713'}
+ proposer:{name:'Finportal, a. s.',reg:'119713'}
 };
 const financeIntermediaryNote=()=>{const f=INTERMEDIARIES.financie;return `<div class="intermediary-note" role="note"><b>Kto vám tu pomáha?</b><p>Finančné kalkulačky (hypotéky, úvery, sporenie a dôchodok) sprostredkúva <strong>${f.name}</strong>, IČO ${f.ico}, podriadený finančný agent zapísaný v registri NBS pod č. ${f.reg}, s navrhovateľom ${INTERMEDIARIES.proposer.name} (reg. č. ${INTERMEDIARIES.proposer.reg}). Poistenie na tomto webe sprostredkúva ${INTERMEDIARIES.poistenie.name} <a href="#/pravne">Právne informácie →</a></p></div>`};
 const financeTools=[
