@@ -53,3 +53,4 @@ html { scrollbar-gutter: stable; }
 .cookie-actions button { flex: 1 1 135px; padding: 10px; border: 1px solid #708777; border-radius: 8px; background: #eef3e9; color: #183748; font-size: 13px; font-weight: 700; }
 .cookie-links { gap: 15px; margin-top: 12px; font-size: 12px; text-decoration: underline; }
 [data-theme=dark] #cookie-panel { background: #1a303d; color: #ecf4e9; border-color: #546e61; }
+.document-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,215px),1fr));gap:12px}.document-actions label{background:#e7efe4;color:#183748;padding:16px;border-radius:12px;min-width:0}.document-actions input[type=file]{display:block;width:100%;max-width:100%;font-size:12px}.contact-form .audit-consent input[type=checkbox]{width:auto;display:inline;margin-right:8px}
