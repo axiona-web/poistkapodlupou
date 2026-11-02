@@ -13,7 +13,7 @@ function lifePage() {
       ${options('health','Ako by ste opísali svoj aktuálny zdravotný stav?',['Bez ťažkostí','Mám mierne alebo občasné ťažkosti','Mám dlhodobé alebo závažnejšie ťažkosti','Radšej preberiem osobne'])}</section>
       <section hidden><h2>3. Krytie a rozpočet</h2>${options('cover','Ktoré riziká chcete prebrať? Môžete vybrať viac možností.',['Úmrtie','Invalidita','Závažné ochorenie','Trvalé následky úrazu','Práceneschopnosť','Hospitalizácia'],true)}
       ${options('budget','Koľko chcete mesačne vyčleniť na poistenie?',['Do 25 €','Nad 25 až 50 €','Nad 50 až 75 €','Nad 75 až 100 €','Viac ako 100 €','Ešte neviem'])}<p class="note">Ide o váš rozpočet. Cenu ponuky určí poisťovňa.</p></section>
-      <section hidden><h2>Váš prehľad</h2><dl id="life-summary"></dl><p>Na konzultáciu môžete otvoriť pripravený e-mail. Obsahuje vek, pracovné postavenie, druh práce, vybrané krytie a rozpočet. Výška, hmotnosť a odpoveď o zdraví zostanú na tejto stránke. Odošlete ho vo svojej e-mailovej aplikácii.</p><a class="btn" id="life-email">Pripraviť e-mail na konzultáciu ↗</a></section>
+      <section hidden><h2>Váš prehľad</h2><dl id="life-summary"></dl><p>Na konzultáciu môžete otvoriť pripravený e-mail. Obsahuje vek, pracovné postavenie, druh práce, vybrané krytie a rozpočet. Výška, hmotnosť a odpoveď o zdraví zostanú na tejto stránke. Odošlete ho vo svojej e-mailovej aplikácii.</p><a class="btn" id="life-email">Pripraviť e-mail na konzultáciu →</a></section>
       <div class="audit-step-bottom"><button type="button" class="audit-back" id="life-back" hidden>← Späť</button><span id="life-progress">Krok 1 z 3</span><button type="submit" class="btn" id="life-next">Pokračovať →</button></div>
     </form></article>`;
 }
