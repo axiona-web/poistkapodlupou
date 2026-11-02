@@ -1,3 +1,4 @@
+export { AuditQuota } from './quota.mjs';
 // Private pilot only. No customer upload UI until privacy, abuse and audit checks are complete.
 const TYPES = ['majetok','pzp','kasko','cestovne','zivotne','zodpovednost'];
 const MAX = 1024 * 1024; // Conservative 1 MiB pilot limit, including JSON/base64.
@@ -29,14 +30,16 @@ export function validateResult(response){
 }
 export default {async fetch(request,env){
  const path=new URL(request.url).pathname;
- if(path==='/health'&&request.method==='GET')return json({service:'poistka-audit',revision:'transport-2',mode:'private-pilot',public_uploads:false});
- if(path!=='/extract')return json({error:'not_found'},404);
+ const publicUpload = path === '/public/extract';
+ if(path==='/health'&&request.method==='GET')return json({service:'poistka-audit',revision:'mobile-1',mode:'limited',public_uploads:Boolean(env.AUDIT_QUOTA)});
+ if(!publicUpload && path!=='/extract')return json({error:'not_found'},404);
  if(request.headers.get('Origin')&&request.headers.get('Origin')!==ORIGIN)return json({error:'origin_not_allowed'},403);
  if(request.method==='OPTIONS')return new Response(null,{status:204,headers:{'Access-Control-Allow-Origin':ORIGIN,'Access-Control-Allow-Methods':'POST','Access-Control-Allow-Headers':'Content-Type, Authorization','Vary':'Origin'}});
  if(request.method!=='POST')return json({error:'method_not_allowed'},405);
  if(!env.ANTHROPIC_API_KEY||!env.ANTHROPIC_MODEL||!env.TEST_ACCESS_TOKEN||env.TEST_ACCESS_TOKEN.length<32)return json({error:'pilot_not_configured'},503);
  const token=request.headers.get('Authorization')||'';
- if(token.length>256||!await equal(token,'Bearer '+env.TEST_ACCESS_TOKEN))return json({error:'unauthorized'},401);
+ if(publicUpload && request.headers.get('Origin')!==ORIGIN)return json({error:'origin_not_allowed'},403);
+ if(!publicUpload && (token.length>256||!await equal(token,'Bearer '+env.TEST_ACCESS_TOKEN)))return json({error:'unauthorized'},401);
  if(!(request.headers.get('Content-Type')||'').startsWith('application/json'))return json({error:'json_required'},415);
  const declared=Number(request.headers.get('Content-Length'));if(declared>MAX)return json({error:'document_too_large'},413);
  let input;
@@ -55,7 +58,27 @@ export default {async fetch(request,env){
  const controller = new AbortController();
  const timer = setTimeout(() => controller.abort(), 60000);
  try{
-  const upstream=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',redirect:'manual',signal:controller.signal,headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':env.ANTHROPIC_API_KEY},body:JSON.stringify({model:env.ANTHROPIC_MODEL,max_tokens:4000,output_config:{format:extractionFormat},system:SYSTEM,messages:[{role:'user',content:[{type:input.mime==='application/pdf'?'document':'image',source:{type:'base64',media_type:input.mime,data:input.data}},{type:'text',text:'Používateľ zvolil typ zmluvy: '+input.type+'. Priprav údaje na potvrdenie; skutočný nesúlad typu uveď v missing. Ak typ súhlasí, nepridávaj k tomu žiadnu položku do missing.'}]}]})});
+  const message = {model:env.ANTHROPIC_MODEL,max_tokens:4000,output_config:{format:extractionFormat},system:SYSTEM,messages:[{role:'user',content:[{type:input.mime==='application/pdf'?'document':'image',source:{type:'base64',media_type:input.mime,data:input.data}},{type:'text',text:'Používateľ zvolil typ zmluvy: '+input.type+'. Priprav údaje na potvrdenie; skutočný nesúlad typu uveď v missing. Ak typ súhlasí, nepridávaj k tomu žiadnu položku do missing.'}]}]};
+  const headers = {'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':env.ANTHROPIC_API_KEY};
+  const options = {method:'POST',redirect:'manual',signal:controller.signal,headers};
+  if (publicUpload) {
+   if (!env.AUDIT_QUOTA || env.ANTHROPIC_MODEL !== 'claude-sonnet-5-5') return json({error:'public_unavailable'},503);
+   if (input.consent !== true) return json({error:'consent_required'},400);
+   const ip = request.headers.get('CF-Connecting-IP');
+   if (!ip) return json({error:'public_unavailable'},503);
+   const salt = env.TEST_ACCESS_TOKEN + new Date().toISOString().slice(0,10);
+   const digest = await crypto.subtle.digest('SHA-256',new TextEncoder().encode(salt+'|'+ip));
+   const client = Array.from(new Uint8Array(digest),byte=>byte.toString(16).padStart(2,'0')).join('');
+   const quota = env.AUDIT_QUOTA.get(env.AUDIT_QUOTA.idFromName('public-budget'));
+   const reserved = await quota.fetch('https://internal/reserve',{method:'POST',body:JSON.stringify({client})});
+   if (!reserved.ok) return json({error:'quota_reached'},429);
+   const {max_tokens, ...countInput} = message;
+   const counted = await fetch('https://api.anthropic.com/v1/messages/count_tokens',{...options,body:JSON.stringify(countInput)});
+   if (!counted.ok) return json({error:'size_check_unavailable'},503);
+   const {input_tokens} = await counted.json();
+   if (!Number.isSafeInteger(input_tokens) || input_tokens < 1 || input_tokens > 16000) return json({error:'document_too_long'},413);
+  }
+  const upstream=await fetch('https://api.anthropic.com/v1/messages',{...options,body:JSON.stringify(message)});
   if(!upstream.ok)return json({error:'provider_unavailable'},502);
   let response;
   try { response = await upstream.json(); }

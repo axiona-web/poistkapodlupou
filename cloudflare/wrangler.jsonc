@@ -7,5 +7,21 @@
   },
   "vars": {
     "ANTHROPIC_MODEL": "claude-sonnet-5-5"
-  }
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "AUDIT_QUOTA",
+        "class_name": "AuditQuota"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "audit-quota-v1",
+      "new_sqlite_classes": [
+        "AuditQuota"
+      ]
+    }
+  ]
 }
