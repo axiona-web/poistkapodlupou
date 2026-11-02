@@ -21,12 +21,14 @@ function bindAudit(pilot=false){
   const form=root.querySelector('form'),status=form.querySelector('[role=status]');
   form.onsubmit=async event=>{
    event.preventDefault();
+   const token=readPilotToken(form.elements.token);
+   if(!token)return;
    const file=form.elements.file.files[0];
    if(!file||file.size>750*1024||!file.size){status.textContent='Vyberte súbor do 750 KiB.';return;}
    const submit=form.querySelector('button');submit.disabled=true;status.textContent='Čítame dokument…';
    try{
     const data=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result.split(',')[1]);reader.onerror=reject;reader.readAsDataURL(file);});
-    const token=form.elements.token.value.trim();form.elements.token.value='';
+    form.elements.token.value='';
     const response=await fetch('https://poistkapodlupou.mdominik01.workers.dev/extract',{method:'POST',credentials:'omit',redirect:'error',signal:AbortSignal.timeout(70000),headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({type,mime:file.type,data})});
     if(!response.ok){const detail=await response.json().catch(()=>({}));throw Error(({output_truncated:'Odpoveď dosiahla limit dĺžky. Skúste kratší dokument.',model_refusal:'Model čítanie tohto dokumentu odmietol.',invalid_extraction:'Prečítané údaje neprešli kontrolou hodnôt, strán alebo podkladových úryvkov.',invalid_provider_response:'Anthropic vrátil nečitateľnú odpoveď.',provider_timeout:'Anthropic nestihol odpovedať do 60 sekúnd.',provider_connection:'Cloudflare nedokončil spojenie s Anthropic.'})[detail.error] || (response.status===401?'Skontrolujte testovací token.':'Dokument sa nepodarilo prečítať. Skúste čitateľný PDF, JPG alebo PNG.'));}
     const extracted=await response.json();

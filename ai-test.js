@@ -28,7 +28,9 @@ const form=document.querySelector('#pilot-form'),result=document.querySelector('
 form.onsubmit=async event=>{
  event.preventDefault();if(!form.reportValidity())return;
  const button=form.querySelector('button'),field=form.elements.token;
- let token=field.value.trim();field.value='';button.disabled=true;result.textContent='Čítam fiktívny dokument. Môže to chvíľu trvať…';
+ let token=readPilotToken(field);
+ if(!token)return;
+ field.value='';button.disabled=true;result.textContent='Čítam fiktívny dokument. Môže to chvíľu trvať…';
  try{
  const scan = form.elements.sample.value === 'scan';
  const response=await fetch('https://poistkapodlupou.mdominik01.workers.dev/extract',{method:'POST',credentials:'omit',referrerPolicy:'no-referrer',signal:AbortSignal.timeout(70000),headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({type:'majetok',mime:scan?'image/png':'application/pdf',data:scan?sampleScan():samplePDF()})});token='';
