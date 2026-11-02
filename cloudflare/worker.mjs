@@ -55,7 +55,7 @@ export default {async fetch(request,env){
  const controller = new AbortController();
  const timer = setTimeout(() => controller.abort(), 60000);
  try{
-  const upstream=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',redirect:'manual',signal:controller.signal,headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':env.ANTHROPIC_API_KEY},body:JSON.stringify({model:env.ANTHROPIC_MODEL,max_tokens:4000,output_config:{format:extractionFormat},system:SYSTEM,messages:[{role:'user',content:[{type:input.mime==='application/pdf'?'document':'image',source:{type:'base64',media_type:input.mime,data:input.data}},{type:'text',text:'Používateľ zvolil typ zmluvy: '+input.type+'. Priprav údaje na potvrdenie; nesúlad typu uveď v missing.'}]}]})});
+  const upstream=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',redirect:'manual',signal:controller.signal,headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','x-api-key':env.ANTHROPIC_API_KEY},body:JSON.stringify({model:env.ANTHROPIC_MODEL,max_tokens:4000,output_config:{format:extractionFormat},system:SYSTEM,messages:[{role:'user',content:[{type:input.mime==='application/pdf'?'document':'image',source:{type:'base64',media_type:input.mime,data:input.data}},{type:'text',text:'Používateľ zvolil typ zmluvy: '+input.type+'. Priprav údaje na potvrdenie; skutočný nesúlad typu uveď v missing. Ak typ súhlasí, nepridávaj k tomu žiadnu položku do missing.'}]}]})});
   if(!upstream.ok)return json({error:'provider_unavailable'},502);
   let response;
   try { response = await upstream.json(); }
