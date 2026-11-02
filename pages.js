@@ -28,6 +28,10 @@ function selectFinance(id,focus=false){
  const panel=document.querySelector('#finance-panel');
  if(panel.dataset.active===id)return;
  disposeFinance();panel.dataset.active=id;panel.setAttribute('aria-labelledby','tab-'+id);
+ if (privacyChoice !== true) {
+   panel.innerHTML = `<div class="embed-heading"><h2>${item[1]}</h2></div><p>Na zobrazenie kalkulačky priamo tu povoľte obsah Finportalu.</p><button class="btn" data-cookie-settings>Nastavenia cookies</button><p><a class="text-link" href="${financeUrl(item)}" target="_blank" rel="noopener noreferrer">Otvoriť kalkulačku samostatne ↗</a></p>`;
+   return;
+ }
  panel.innerHTML=`<div class="embed-heading"><div><span class="eyebrow">Finportal</span><h2>${item[1]}</h2></div><a href="${financeUrl(item)}" target="_blank" rel="noopener noreferrer">Otvoriť samostatne ↗</a></div><p class="embed-status" role="status">Načítava sa kalkulačka…</p><div class="embed-surface"><iframe id="finportal-iframe" title="${item[1]} – Finportal" src="${financeUrl(item)}" width="100%" height="700" style="border:none" referrerpolicy="strict-origin-when-cross-origin"></iframe></div><p class="embed-note">Kalkulačku prevádzkuje Finportal. Ak sa nezobrazí, použite odkaz „Otvoriť samostatne“. Prepnutím kalkulačky sa rozpracované údaje vymažú.</p>`;
  const frame=panel.querySelector('iframe');const status=panel.querySelector('.embed-status');
  frame.addEventListener('load',()=>{status.hidden=true},{once:true});
