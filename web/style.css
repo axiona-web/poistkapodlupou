@@ -95,3 +95,5 @@ button.product-tile{width:100%;padding:0;font:inherit;text-align:left;color:inhe
 
 .page-shell>.back{display:inline-block;margin-bottom:26px;color:#66856d;font-size:13px}[data-theme=dark] .page-shell>.back{color:#bed5b4}
 .contact-layout>.back{grid-column:1/-1;justify-self:start;margin-bottom:-50px}@media(max-width:800px){.contact-layout>.back{margin-bottom:0}}
+
+.embed-heading-slim{justify-content:flex-end;margin-bottom:10px}@media(max-width:600px){.embed-heading-slim{align-items:flex-end}}
