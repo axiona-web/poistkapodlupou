@@ -62,7 +62,7 @@ function privacyPage() {
    ['Krátky audit poistky (dotazník)','Odpovede a sumy, ktoré zadáte','Údaje sa nikam neodosielajú, zostávajú v otvorenej stránke','Do zatvorenia alebo opustenia auditu'],
    ['Čítanie nahratej zmluvy','Súbor, ktorý vyberiete, a typ poistenia','Váš súhlas, čl. 6 ods. 1 písm. a)','Dokument neukladáme; spracuje sa iba počas čítania'],
    ['Ochrana služby čítania pred zneužitím','Denne sa meniaci odtlačok IP adresy a počet požiadaviek, bez obsahu dokumentu','Oprávnený záujem, čl. 6 ods. 1 písm. f)','Denné počítadlá sa nahrádzajú nasledujúci deň'],
-   ['Zverejnenie recenzie','Krstné meno, začiatočné písmeno priezviska, mesto, hodnotenie a text recenzie','Váš súhlas, čl. 6 ods. 1 písm. a)','Do odvolania súhlasu; e-mail s recenziou 1 rok'],['Finančné sprostredkovanie','Údaje potrebné na uzavretie a správu zmluvy','Plnenie zákonných povinností, čl. 6 ods. 1 písm. c), a zmluva, čl. 6 ods. 1 písm. b)','Podľa zákona o finančnom sprostredkovaní (spravidla 10 rokov od skončenia zmluvného vzťahu)']
+   ['Zverejnenie recenzie','Krstné meno, začiatočné písmeno priezviska, mesto a text recenzie','Váš súhlas, čl. 6 ods. 1 písm. a)','Do odvolania súhlasu; e-mail s recenziou 1 rok'],['Finančné sprostredkovanie','Údaje potrebné na uzavretie a správu zmluvy','Plnenie zákonných povinností, čl. 6 ods. 1 písm. c), a zmluva, čl. 6 ods. 1 písm. b)','Podľa zákona o finančnom sprostredkovaní (spravidla 10 rokov od skončenia zmluvného vzťahu)']
   ];
   const recipients=[
    ['Websupport, s. r. o.','E-mailové schránky na doméne poistkapodlupou.sk','Slovensko'],
