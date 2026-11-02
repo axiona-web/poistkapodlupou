@@ -49,14 +49,14 @@ function cookiesPage() {
   <h2>Kalkulačky Finportalu</h2><p>Finančné kalkulačky prevádzkuje Finportal, a. s. Ak ich povolíte, prehliadač sa pri otvorení stránky Kalkulačky spojí so serverom Finportalu. Ten dostane technické údaje o pripojení vrátane IP adresy a môže používať vlastné cookies. Údaje, ktoré do kalkulačky zadáte, spracúva Finportal podľa svojich pravidiel. Ak kalkulačky nepovolíte, môžete ich otvoriť samostatným odkazom na webe Finportalu.</p>
   <h2>Partnerské odkazy na poistenie</h2><p>Dlaždice na úvode otvárajú kalkulačky Najpoistenie v novom okne. Na tom webe platia pravidlá jeho prevádzkovateľa.</p>
   <h2>Zmena alebo odvolanie súhlasu</h2><p>Svoju voľbu môžete kedykoľvek zmeniť. Odvolanie súhlasu nemá vplyv na zákonnosť načítania pred jeho odvolaním.</p><button class="btn" data-cookie-settings>Zmeniť nastavenia</button>
-  <p class="legal-updated">Pravidlá vychádzajú z § 109 ods. 8 zákona č. 452/2021 Z. z. o elektronických komunikáciách. Účinné od ${LEGAL_UPDATED}. Súvisí: <a href="#/sukromie">Ochrana osobných údajov</a>.</p>`);
+  <p class="legal-updated">Pravidlá vychádzajú z § 109 ods. 8 zákona č. 452/2021 Z. z. o elektronických komunikáciách. Účinné od ${LEGAL_UPDATED}. Súvisí: <a href="/sukromie">Ochrana osobných údajov</a>.</p>`);
 }
 
 function privacyPage() {
   const P=INTERMEDIARIES.poistenie,F=INTERMEDIARIES.financie;
   const purposes=[
    ['Zobrazenie webu','IP adresa, typ prehliadača, čas požiadavky','Oprávnený záujem na bezpečnej prevádzke webu, čl. 6 ods. 1 písm. f)','Krátkodobé technické záznamy poskytovateľa hostingu'],
-   ['Vaše nastavenia','Voľba motívu a súhlasu s kalkulačkami, iba vo vašom prehliadači','Nevyhnutné pre fungovanie webu','Pozri <a href="#/cookies">Cookies</a>'],
+   ['Vaše nastavenia','Voľba motívu a súhlasu s kalkulačkami, iba vo vašom prehliadači','Nevyhnutné pre fungovanie webu','Pozri <a href="/cookies">Cookies</a>'],
    ['Odpoveď na vašu otázku (e-mail, kontaktný formulár)','Meno, e-mail, telefón, téma a obsah správy','Opatrenia pred uzavretím zmluvy na vašu žiadosť, čl. 6 ods. 1 písm. b)','1 rok od poslednej komunikácie, ak nevznikne zmluvný vzťah'],
    ['Dopyt na životné poistenie','Vek, pracovné postavenie, druh práce, želané krytie a rozpočet, ak nám ich pošlete e-mailom','Opatrenia pred uzavretím zmluvy na vašu žiadosť, čl. 6 ods. 1 písm. b)','1 rok od poslednej komunikácie, ak nevznikne zmluvný vzťah'],
    ['Krátky audit poistky (dotazník)','Odpovede a sumy, ktoré zadáte','Údaje sa nikam neodosielajú, zostávajú v otvorenej stránke','Do zatvorenia alebo opustenia auditu'],
@@ -83,7 +83,7 @@ function privacyPage() {
   <p>Prenos do USA prebieha na základe rozhodnutia Európskej komisie o primeranosti (EU-US Data Privacy Framework) alebo štandardných zmluvných doložiek. Údaje nepredávame a nepoužívame na reklamu.</p>
   <h2>Vaše práva</h2><ul><li>prístup k svojim údajom a ich kópia,</li><li>oprava nesprávnych údajov,</li><li>vymazanie, ak ich už nepotrebujeme alebo ste odvolali súhlas,</li><li>obmedzenie spracúvania,</li><li>prenosnosť údajov,</li><li>námietka proti spracúvaniu na základe oprávneného záujmu,</li><li>odvolanie súhlasu kedykoľvek, bez vplyvu na skoršie spracúvanie.</li></ul>
   <p>Stačí napísať na <a href="mailto:ahoj@poistkapodlupou.sk">ahoj@poistkapodlupou.sk</a>. Odpovieme najneskôr do jedného mesiaca. Ak si myslíte, že s údajmi zaobchádzame nesprávne, môžete podať návrh na <a href="https://dataprotection.gov.sk/" target="_blank" rel="noopener noreferrer">Úrad na ochranu osobných údajov SR →</a>, Hraničná 12, 820 07 Bratislava.</p>
-  <p class="legal-updated">Účinné od ${LEGAL_UPDATED}. Ak tieto informácie zmeníme, aktualizujeme ich na tejto stránke. Súvisí: <a href="#/cookies">Cookies</a> · <a href="#/pravne">Právne informácie</a>.</p>`);
+  <p class="legal-updated">Účinné od ${LEGAL_UPDATED}. Ak tieto informácie zmeníme, aktualizujeme ich na tejto stránke. Súvisí: <a href="/cookies">Cookies</a> · <a href="/pravne">Právne informácie</a>.</p>`);
 }
 
 document.addEventListener('click', event => {

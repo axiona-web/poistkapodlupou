@@ -4,7 +4,7 @@ function lifePage() {
       ${labels.map(label => `<label><input type="${multiple ? 'checkbox' : 'radio'}" name="${name}" value="${label}" ${multiple ? '' : 'required'}><span>${label}</span></label>`).join('')}
     </div></fieldset>`;
   const number = (name, label, min, max, step) => `<label>${label}<input type="number" name="${name}" inputmode="${step === 1 ? 'numeric' : 'decimal'}" min="${min}" max="${max}" step="${step}" required></label>`;
-  return `<article class="article life-page"><a class="back" href="#/">← Späť na úvod</a><h1>Životné poistenie</h1><p>Pripravte si podklady na rozhovor o poistení. Odpovede ostávajú v tejto otvorenej stránke.</p>
+  return `<article class="article life-page"><a class="back" href="/">← Späť na úvod</a><h1>Životné poistenie</h1><p>Pripravte si podklady na rozhovor o poistení. Odpovede ostávajú v tejto otvorenej stránke.</p>
     <form class="contact-form" id="life-form" autocomplete="off">
       <section><h2>1. O vás</h2><div class="life-numbers">${number('age','Vek (roky)',1,115,1)}${number('height','Výška (cm)',40,250,1)}${number('weight','Hmotnosť (kg)',2,400,0.1)}</div>
       ${options('status','Aké je vaše pracovné postavenie?',['Zamestnanec na TPP','Podnikateľ / SZČO','Študent','Dôchodca','Rodičovská dovolenka','Iné'])}
