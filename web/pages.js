@@ -84,7 +84,7 @@ function reviewsPage(){
  const list=(typeof REVIEWS!=='undefined'?REVIEWS:[]);
  const stars=n=>`<span class="review-stars" aria-label="Hodnotenie ${n} z 5">${'★'.repeat(n)}<span aria-hidden="true">${'★'.repeat(5-n)}</span></span>`;
  const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- const cards=list.length?`<div class="review-grid">${list.map(r=>`<figure class="review-card">${stars(Math.max(1,Math.min(5,r.rating|0)))}<blockquote>„${esc(r.text)}“</blockquote><figcaption><b>${esc(r.name)}</b>${r.city?` · ${esc(r.city)}`:''}<span>${esc(r.area||'')}</span></figcaption></figure>`).join('')}</div>`:`<div class="review-empty"><img src="assets/life.svg" alt="" width="300" height="200"><div><h2>Prvé slová zbierame.</h2><p>Táto stránka je nová. Ak sme vám už pomohli, budeme radi, keď sa podelíte o svoju skúsenosť ako prví.</p></div></div>`;
+ const cards=list.length?`<div class="review-grid">${list.map(r=>`<figure class="review-card"><blockquote>„${esc(r.text)}“</blockquote><figcaption><b>${esc(r.name)}</b>${r.city?` · ${esc(r.city)}`:''}<span>${esc(r.area||'')}</span></figcaption></figure>`).join('')}</div>`:`<div class="review-empty"><img src="assets/life.svg" alt="" width="300" height="200"><div><h2>Prvé slová zbierame.</h2><p>Táto stránka je nová. Ak sme vám už pomohli, budeme radi, keď sa podelíte o svoju skúsenosť ako prví.</p></div></div>`;
  const areas=['Poistenie auta','Dom a domácnosť','Cestovné poistenie','Životné poistenie','Iné poistenie','Hypotéka alebo úver','Sporenie alebo dôchodok'];
  return `<div class="page-shell wrap reviews-page"><a class="back" href="#/">← Späť na úvod</a><div class="page-intro"><span class="eyebrow">Recenzie</span><h1>Skúsenosti<br><em>našich klientov.</em></h1><p>Úprimné slová ľudí, ktorým sme pomohli vyznať sa v poistení a financiách.</p></div>
  ${cards}
@@ -92,8 +92,7 @@ function reviewsPage(){
  <section class="review-form-wrap" aria-labelledby="review-form-title"><div class="review-form-intro"><h2 id="review-form-title">Podeľte sa o skúsenosť</h2><p>Recenziu nám pošlete e-mailom. Po overení ju zverejníme v nezmenenom znení. Zverejníme iba krstné meno, začiatočné písmeno priezviska a mesto, ak ho uvediete.</p></div>
  <form id="review-form" class="contact-form"><div class="form-row"><label>Meno a začiatočné písmeno priezviska<input name="name" required maxlength="40" placeholder="Jana K." autocomplete="off"></label><label>Mesto <span class="optional">(nepovinné)</span><input name="city" maxlength="40" placeholder="Spišská Nová Ves"></label></div>
  <label>S čím sme vám pomohli?<select name="area" required>${areas.map(a=>`<option>${a}</option>`).join('')}</select></label>
- <fieldset><legend>Hodnotenie</legend><div class="rating-input">${[5,4,3,2,1].map(n=>`<label><input type="radio" name="rating" value="${n}" ${n===5?'checked':''}><span>${'★'.repeat(n)}</span></label>`).join('')}</div></fieldset>
- <label>Vaša skúsenosť<textarea name="text" required minlength="20" maxlength="600" rows="5" placeholder="Čo vám pomohlo? Ako ste boli spokojní?"></textarea></label>
+  <label>Vaša skúsenosť<textarea name="text" required minlength="20" maxlength="600" rows="5" placeholder="Čo vám pomohlo? Ako ste boli spokojní?"></textarea></label>
  <label class="check-label"><input type="checkbox" name="client" required><span>Som klient Poistky pod Lupou a recenzia vychádza z mojej skúsenosti.</span></label>
  <label class="check-label"><input type="checkbox" name="consent" required><span>Súhlasím so zverejnením recenzie s uvedeným menom a mestom na webe poistkapodlupou.sk. Súhlas môžem kedykoľvek odvolať na ahoj@poistkapodlupou.sk. <a href="#/sukromie">Ochrana osobných údajov</a></span></label>
  <button class="btn" type="submit">Pripraviť e-mail s recenziou <span>→</span></button><p class="form-privacy">Otvorí sa vaša e-mailová aplikácia s pripravenou správou na ahoj@poistkapodlupou.sk. Odošlete ju vy.</p><div id="review-result" role="status"></div></form></section></div>`;
@@ -101,7 +100,7 @@ function reviewsPage(){
 function bindReviews(){
  const form=document.querySelector('#review-form');if(!form)return;
  form.onsubmit=e=>{e.preventDefault();if(!form.reportValidity())return;const d=new FormData(form);
-  const body=['Recenzia pre Poistku pod Lupou','',`Meno: ${d.get('name')}`,`Mesto: ${d.get('city')||'-'}`,`Oblasť: ${d.get('area')}`,`Hodnotenie: ${d.get('rating')} z 5`,'','Text:',d.get('text'),'','Potvrdzujem, že som klient a recenzia vychádza z mojej skúsenosti.','Súhlasím so zverejnením recenzie s uvedeným menom a mestom na webe poistkapodlupou.sk.'].join('\n');
+  const body=['Recenzia pre Poistku pod Lupou','',`Meno: ${d.get('name')}`,`Mesto: ${d.get('city')||'-'}`,`Oblasť: ${d.get('area')}`,'','Text:',d.get('text'),'','Potvrdzujem, že som klient a recenzia vychádza z mojej skúsenosti.','Súhlasím so zverejnením recenzie s uvedeným menom a mestom na webe poistkapodlupou.sk.'].join('\n');
   location.href='mailto:ahoj@poistkapodlupou.sk?subject='+encodeURIComponent('Recenzia – '+d.get('name'))+'&body='+encodeURIComponent(body);
   const r=document.querySelector('#review-result');r.textContent='E-mail je pripravený vo vašej aplikácii. Ďakujeme! Recenziu zverejníme po overení.';};
 }
