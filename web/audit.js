@@ -28,7 +28,7 @@ function bindAudit(pilot=false){
     const data=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result.split(',')[1]);reader.onerror=reject;reader.readAsDataURL(file);});
     const token=form.elements.token.value.trim();form.elements.token.value='';
     const response=await fetch('https://poistkapodlupou.mdominik01.workers.dev/extract',{method:'POST',credentials:'omit',redirect:'error',signal:AbortSignal.timeout(70000),headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({type,mime:file.type,data})});
-    if(!response.ok)throw Error(response.status===401?'Skontrolujte testovací token.':'Dokument sa nepodarilo prečítať. Skúste čitateľný PDF, JPG alebo PNG.');
+    if(!response.ok){const detail=await response.json().catch(()=>({}));throw Error(({output_truncated:'Odpoveď dosiahla limit dĺžky. Skúste kratší dokument.',model_refusal:'Model čítanie tohto dokumentu odmietol.',invalid_extraction:'Prečítané údaje neprešli kontrolou hodnôt, strán alebo podkladových úryvkov.',invalid_provider_response:'Anthropic vrátil nečitateľnú odpoveď.',provider_timeout:'Anthropic nestihol odpovedať do 60 sekúnd.',provider_connection:'Cloudflare nedokončil spojenie s Anthropic.'})[detail.error] || (response.status===401?'Skontrolujte testovací token.':'Dokument sa nepodarilo prečítať. Skúste čitateľný PDF, JPG alebo PNG.'));}
     const extracted=await response.json();
     if(!Array.isArray(extracted.fields)||!Array.isArray(extracted.missing))throw Error('Neúplná odpoveď služby.');
     if(!form.isConnected)return;
