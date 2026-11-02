@@ -24,7 +24,8 @@ export function buildMessage({ from, fromName, to, replyTo, subject, text, date 
 }
 
 export async function sendMail(options, connect) {
-  const { host, port = 465, user, pass, to } = options;
+  const { host, port = 465, to } = options;
+  const user = String(options.user).trim(), pass = String(options.pass).replace(/^[\s\u00a0\ufeff]+|[\s\u00a0\ufeff]+$/g, '');
   const socket = connect({ hostname: host, port }, { secureTransport: 'on', allowHalfOpen: false });
   const writer = socket.writable.getWriter();
   const reader = socket.readable.getReader();
@@ -47,9 +48,13 @@ export async function sendMail(options, connect) {
   try {
     await expect(220, 'greeting');
     await send(`EHLO ${user.split('@')[1]}`); await expect(250, 'ehlo');
-    if (/AUTH[ =][^\n]*PLAIN/i.test(lastText)) {
-      await send('AUTH PLAIN ' + b64('\u0000' + user + '\u0000' + pass)); await expect(235, 'plain');
-    } else {
+    const caps = lastText;
+    let authed = false;
+    if (/AUTH[ =][^\n]*PLAIN/i.test(caps)) {
+      await send('AUTH PLAIN ' + b64('\u0000' + user + '\u0000' + pass));
+      authed = (await reply()) === 235;
+    }
+    if (!authed) {
       await send('AUTH LOGIN'); await expect(334, 'auth');
       await send(b64(user)); await expect(334, 'user');
       await send(b64(pass)); await expect(235, 'pass');
