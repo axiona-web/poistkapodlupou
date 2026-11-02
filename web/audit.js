@@ -9,7 +9,7 @@ const AUDIT_TYPES = {
 // Same order, titles and art as the homepage tiles.
 const AUDIT_ORDER=[['pzp','PZP','Limity, asistencia, pripoistenia','pzp-car'],['kasko','KASKO','Riziká, spoluúčasť, hodnota auta','kasko-car'],['majetok','Dom a domácnosť','Stavba, vybavenie, poistné sumy','home'],['cestovne','Cestovné','Územie, aktivity, liečebné náklady','travel'],['zodpovednost','Zodpovednosť','Pracovné činnosti, limit, výluky','work'],['zivotne','Životné poistenie','Riziká, poistné sumy, poplatky','life']];
 const AUDIT_ART={majetok:'home',pzp:'pzp-car',kasko:'kasko-car',cestovne:'travel',zivotne:'life',zodpovednost:'work'};
-function auditPage(pilot=false){return `<section class="audit-entry wrap" aria-label="Audit poistky"><div class="audit-heading"><div><h1>Audit poistky</h1><p>${pilot?'Súkromný test čítania zmluvy. Vyberte typ poistenia.':'Vyberte typ poistenia. Zmluvu môžete nahrať, odfotiť alebo pokračovať krátkym dotazníkom.'}</p></div></div><div id="audit-flow"></div></section>`;}
+function auditPage(pilot=false){return `<div class="page-shell wrap audit-entry"><a class="back" href="#/">← Späť na úvod</a><div class="page-intro"><span class="eyebrow">Audit poistky</span><h1>Viete, čo máte<br><em>v zmluve?</em></h1><p>${pilot?'Súkromný test čítania zmluvy. Vyberte typ poistenia.':'Vyberte typ poistenia. Zmluvu môžete nahrať, odfotiť alebo pokračovať krátkym dotazníkom.'}</p></div><div id="audit-flow"></div></div>`;}
 function bindAudit(pilot=false){
  const root=document.querySelector('#audit-flow');if(!root)return;
  let documentData=null;
