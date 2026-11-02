@@ -55,6 +55,19 @@ export class ReviewStore {
       });
       return Response.json({ result: ok }, { status: ok === 'ok' ? 201 : 429 });
     }
+    if (action === 'contact_rate') {
+      const today = new Date().toISOString().slice(0, 10);
+      const ok = await this.storage.transaction(async tx => {
+        const rate = (await tx.get('contact_rate')) || {};
+        if (rate.day !== today) { rate.day = today; rate.total = 0; rate.clients = {}; }
+        const uses = rate.clients[client] || 0;
+        if (uses >= 5 || rate.total >= 100) return false;
+        rate.clients[client] = uses + 1; rate.total++;
+        await tx.put('contact_rate', rate);
+        return true;
+      });
+      return new Response(null, { status: ok ? 204 : 429 });
+    }
     if (action === 'admin_list') {
       return Response.json((await this.all()).map(r => ({ ...r })));
     }

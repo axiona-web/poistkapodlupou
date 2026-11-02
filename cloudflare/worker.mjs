@@ -1,6 +1,7 @@
 export { AuditQuota } from './quota.mjs';
 export { ReviewStore } from './reviews.mjs';
 import { validateSubmission } from './reviews.mjs';
+import { sendMail } from './mailer.mjs';
 // Private pilot only. No customer upload UI until privacy, abuse and audit checks are complete.
 const TYPES = ['majetok','pzp','kasko','cestovne','zivotne','zodpovednost'];
 const MAX = 1024 * 1024; // Conservative 1 MiB pilot limit, including JSON/base64.
@@ -60,11 +61,45 @@ async function reviewsRoute(request,env,path){
  }
  return json({error:'method_not_allowed'},405);
 }
+const CONTACT_TOPICS=['Auto','Bývanie','Cestovanie','Práca','Moja poistka','Úver alebo hypotéka','Iná otázka'];
+export function validateContact(input){
+ const c=v=>String(v??'').replace(/[\u0000-\u001f\u007f]/g,' ').replace(/\s+/g,' ').trim();
+ if(!input||typeof input!=='object')throw Error('invalid');
+ if(c(input.website))throw Error('spam');
+ const m={name:c(input.name),email:c(input.email).toLowerCase(),phone:c(input.phone),topic:c(input.topic),message:String(input.message??'').replace(/\r/g,'').trim()};
+ if(m.name.length<2||m.name.length>100)throw Error('name');
+ if(m.email.length>254||!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(m.email))throw Error('email');
+ if(m.phone.length>30||(m.phone&&!/^[+0-9 ()/-]{6,30}$/.test(m.phone)))throw Error('phone');
+ if(!CONTACT_TOPICS.includes(m.topic))throw Error('topic');
+ if(m.message.length<10||m.message.length>2000)throw Error('message');
+ return m;
+}
+export async function contactRoute(request,env,connect){
+ const origin=request.headers.get('Origin');
+ if(origin&&!ORIGINS.includes(origin))return json({error:'origin_not_allowed'},403);
+ if(request.method==='OPTIONS')return new Response(null,{status:204,headers:{'Access-Control-Allow-Origin':ORIGIN,'Access-Control-Allow-Methods':'POST','Access-Control-Allow-Headers':'Content-Type','Access-Control-Max-Age':'600','Vary':'Origin'}});
+ if(request.method!=='POST')return json({error:'method_not_allowed'},405);
+ if(!origin)return json({error:'origin_not_allowed'},403);
+ if(!env.SMTP_HOST||!env.SMTP_USER||!env.SMTP_PASS||!env.REVIEWS)return json({error:'contact_unavailable'},503);
+ let m;try{const t=await request.text();if(t.length>8192)return json({error:'too_large'},413);m=validateContact(JSON.parse(t));}catch(e){return json({error:'invalid_contact',field:e.message},400);}
+ const ip=request.headers.get('CF-Connecting-IP')||'unknown';
+ const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(env.SMTP_PASS+new Date().toISOString().slice(0,10)+'|'+ip));
+ const client=Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('').slice(0,32);
+ const store=env.REVIEWS.get(env.REVIEWS.idFromName('reviews'));
+ const rate=await store.fetch('https://internal/reviews',{method:'POST',body:JSON.stringify({action:'contact_rate',client})});
+ if(!rate.ok)return json({error:'rate_limited'},429);
+ const to=m.topic==='Úver alebo hypotéka'?(env.CONTACT_FINANCE_TO||'dominik@poistkapodlupou.sk'):(env.CONTACT_TO||'ahoj@poistkapodlupou.sk');
+ const text=[`Nová správa z webu poistkapodlupou.sk`,``,`Meno: ${m.name}`,`E-mail: ${m.email}`,`Telefón: ${m.phone||'-'}`,`Téma: ${m.topic}`,``,`Správa:`,m.message,``,`---`,`Odpovedzte priamo na tento e-mail, odpoveď pôjde odosielateľovi.`].join('\n');
+ try{await sendMail({host:env.SMTP_HOST,port:Number(env.SMTP_PORT||465),user:env.SMTP_USER,pass:env.SMTP_PASS,to,replyTo:m.email,fromName:'Poistka pod Lupou – web',subject:`Web: ${m.topic} – ${m.name}`,text},connect||(await import('cloudflare:sockets')).connect);}
+ catch(e){console.log('contact_send_failed',String(e&&e.message||e).slice(0,60));return json({error:'send_failed'},502);}
+ return json({ok:true});
+}
 async function handle(request,env){
  const path=new URL(request.url).pathname;
  const publicUpload = path === '/public/extract';
  if(path==='/health'&&request.method==='GET')return json({service:'poistka-audit',revision:'mobile-1',mode:'limited',public_uploads:Boolean(env.AUDIT_QUOTA)});
  if(path==='/reviews'||path==='/admin/reviews')return reviewsRoute(request,env,path);
+ if(path==='/contact')return contactRoute(request,env);
  if(!publicUpload && path!=='/extract')return json({error:'not_found'},404);
  if(request.headers.get('Origin')&&!ORIGINS.includes(request.headers.get('Origin')))return json({error:'origin_not_allowed'},403);
  if(request.method==='OPTIONS')return new Response(null,{status:204,headers:{'Access-Control-Allow-Origin':ORIGIN,'Access-Control-Allow-Methods':'POST','Access-Control-Allow-Headers':'Content-Type, Authorization','Vary':'Origin'}});

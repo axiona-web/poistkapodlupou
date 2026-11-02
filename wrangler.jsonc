@@ -6,7 +6,10 @@
     "enabled": false
   },
   "vars": {
-    "ANTHROPIC_MODEL": "claude-sonnet-5-5"
+    "ANTHROPIC_MODEL": "claude-sonnet-5-5",
+    "SMTP_HOST": "smtp.m1.websupport.sk",
+    "SMTP_PORT": "465",
+    "SMTP_USER": "ahoj@poistkapodlupou.sk"
   },
   "durable_objects": {
     "bindings": [
