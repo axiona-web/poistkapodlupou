@@ -1,4 +1,6 @@
 export { AuditQuota } from './quota.mjs';
+export { ReviewStore } from './reviews.mjs';
+import { validateSubmission } from './reviews.mjs';
 // Private pilot only. No customer upload UI until privacy, abuse and audit checks are complete.
 const TYPES = ['majetok','pzp','kasko','cestovne','zivotne','zodpovednost'];
 const MAX = 1024 * 1024; // Conservative 1 MiB pilot limit, including JSON/base64.
@@ -29,10 +31,40 @@ export function validateResult(response){
  if(result.missing.some(s=>typeof s!=='string'||s.length>2000))throw Error('missing');
  return {fields,missing:result.missing,requires_confirmation:true};
 }
+async function reviewsRoute(request,env,path){
+ const origin=request.headers.get('Origin');
+ if(origin&&!ORIGINS.includes(origin))return json({error:'origin_not_allowed'},403);
+ if(request.method==='OPTIONS')return new Response(null,{status:204,headers:{'Access-Control-Allow-Origin':ORIGIN,'Access-Control-Allow-Methods':'GET, POST','Access-Control-Allow-Headers':'Content-Type, Authorization','Access-Control-Max-Age':'600','Vary':'Origin'}});
+ if(!env.REVIEWS)return json({error:'reviews_unavailable'},503);
+ const store=env.REVIEWS.get(env.REVIEWS.idFromName('reviews'));
+ const call=body=>store.fetch('https://internal/reviews',{method:'POST',body:JSON.stringify(body)});
+ if(path==='/reviews'&&request.method==='GET'){const r=await call({action:'approved'});const res=json(await r.json());res.headers.set('Cache-Control','public, max-age=60');return res;}
+ if(path==='/reviews'&&request.method==='POST'){
+  if(!origin)return json({error:'origin_not_allowed'},403);
+  if(Number(request.headers.get('Content-Length'))>8192)return json({error:'too_large'},413);
+  let review;try{const text=await request.text();if(text.length>8192)return json({error:'too_large'},413);review=validateSubmission(JSON.parse(text));}catch(e){return json({error:'invalid_review',field:e.message},400);}
+  const ip=request.headers.get('CF-Connecting-IP')||'unknown';
+  const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode((env.REVIEWS_ADMIN_TOKEN||'reviews')+new Date().toISOString().slice(0,10)+'|'+ip));
+  const client=Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('').slice(0,32);
+  const r=await call({action:'submit',review,client});
+  return json(await r.json(),r.status);
+ }
+ if(path==='/admin/reviews'){
+  if(!env.REVIEWS_ADMIN_TOKEN||env.REVIEWS_ADMIN_TOKEN.length<32)return json({error:'admin_not_configured'},503);
+  const token=request.headers.get('Authorization')||'';
+  if(token.length>256||!await equal(token,'Bearer '+env.REVIEWS_ADMIN_TOKEN))return json({error:'unauthorized'},401);
+  if(request.method==='GET'){const r=await call({action:'admin_list'});return json(await r.json());}
+  if(request.method==='POST'){let body;try{body=JSON.parse(await request.text());}catch{return json({error:'invalid'},400);}
+   if(typeof body.id!=='string'||!/^[0-9]{14}-[0-9a-f]{8}$/.test(body.id))return json({error:'invalid'},400);
+   const r=await call({action:'decide',id:body.id,decision:body.decision});return json(await r.json(),r.status);}
+ }
+ return json({error:'method_not_allowed'},405);
+}
 async function handle(request,env){
  const path=new URL(request.url).pathname;
  const publicUpload = path === '/public/extract';
  if(path==='/health'&&request.method==='GET')return json({service:'poistka-audit',revision:'mobile-1',mode:'limited',public_uploads:Boolean(env.AUDIT_QUOTA)});
+ if(path==='/reviews'||path==='/admin/reviews')return reviewsRoute(request,env,path);
  if(!publicUpload && path!=='/extract')return json({error:'not_found'},404);
  if(request.headers.get('Origin')&&!ORIGINS.includes(request.headers.get('Origin')))return json({error:'origin_not_allowed'},403);
  if(request.method==='OPTIONS')return new Response(null,{status:204,headers:{'Access-Control-Allow-Origin':ORIGIN,'Access-Control-Allow-Methods':'POST','Access-Control-Allow-Headers':'Content-Type, Authorization','Vary':'Origin'}});

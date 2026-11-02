@@ -13,6 +13,10 @@
       {
         "name": "AUDIT_QUOTA",
         "class_name": "AuditQuota"
+      },
+      {
+        "name": "REVIEWS",
+        "class_name": "ReviewStore"
       }
     ]
   },
@@ -21,6 +25,12 @@
       "tag": "audit-quota-v1",
       "new_sqlite_classes": [
         "AuditQuota"
+      ]
+    },
+    {
+      "tag": "reviews-v1",
+      "new_sqlite_classes": [
+        "ReviewStore"
       ]
     }
   ]
