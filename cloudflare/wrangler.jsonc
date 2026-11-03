@@ -2,6 +2,11 @@
   "name": "poistkapodlupou",
   "main": "worker.mjs",
   "compatibility_date": "2026-11-01",
+  "triggers": {
+    "crons": [
+      "23 * * * *"
+    ]
+  },
   "observability": {
     "enabled": false
   },

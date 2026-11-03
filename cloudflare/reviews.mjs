@@ -38,7 +38,12 @@ export class ReviewStore {
   }
 
   async fetch(request) {
-    const { action, review, client, id, decision } = await request.json();
+    const { action, review, client, id, decision, state } = await request.json();
+    if (action === 'monitor_state') {
+      const previous = (await this.storage.get('monitor')) || null;
+      if (state) await this.storage.put('monitor', state);
+      return Response.json({ previous });
+    }
     if (action === 'approved') {
       return Response.json((await this.all()).filter(r => r.status === 'approved').map(publicView));
     }

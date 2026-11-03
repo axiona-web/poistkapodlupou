@@ -67,6 +67,7 @@ export async function sendMail(options, connect) {
       await send(b64(user)); await expect(334, 'user');
       await send(b64(pass)); await expect(235, 'pass');
     }
+    if (options.checkOnly) { await send('QUIT'); return; }
     await send(`MAIL FROM:<${user}>`); await expect(250, 'from');
     await send(`RCPT TO:<${to}>`); await expect(250, 'rcpt');
     await send('DATA'); await expect(354, 'data');

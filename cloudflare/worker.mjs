@@ -344,6 +344,7 @@ export async function usageAdminRoute(request,env,path){
  if(token.length>256||!await equal(token,'Bearer '+env.REVIEWS_ADMIN_TOKEN))return json({error:'unauthorized'},401);
  const store=env.REVIEWS.get(env.REVIEWS.idFromName('reviews'));
  const call=body=>store.fetch('https://internal/usage',{method:'POST',body:JSON.stringify(body)});
+ if(path==='/admin/monitor'&&request.method==='POST')return json(await runMonitor(env,{alert:false}));
  if(path==='/admin/usage'&&request.method==='GET')return json(await (await call({action:'usage_list'})).json());
  if(path==='/admin/block'&&request.method==='POST'){
   let b;try{b=JSON.parse(await request.text());}catch{return json({error:'invalid'},400);}
@@ -396,7 +397,7 @@ async function handle(request,env){
  if(path==='/public/chat')return chatRoute(request,env);
  if(path==='/public/conditions/suggest')return suggestRoute(request,env);
  if(path==='/public/verify/start'||path==='/public/verify/check')return verifyRoute(request,env,path);
- if(path==='/admin/usage'||path==='/admin/block')return usageAdminRoute(request,env,path);
+ if(path==='/admin/usage'||path==='/admin/block'||path==='/admin/monitor')return usageAdminRoute(request,env,path);
  if(path==='/conditions'||path.startsWith('/admin/conditions'))return conditionsRoute(request,env,path);
  if(!publicUpload && path!=='/extract')return json({error:'not_found'},404);
  if(request.headers.get('Origin')&&!ORIGINS.includes(request.headers.get('Origin')))return json({error:'origin_not_allowed'},403);
@@ -460,9 +461,33 @@ async function handle(request,env){
   return json({error:controller.signal.aborted?'provider_timeout':'provider_connection'},502);
  }finally{ clearTimeout(timer); }
 }
+
+// Hourly health check (cron). Sends an e-mail only when the set of failures changes, or once a day while failing.
+export async function runMonitor(env,{fetchImpl=fetch,connect,now=new Date(),alert=true}={}){
+ const checks=[];const check=async(name,fn)=>{try{const detail=await fn();checks.push({name,ok:true,detail:detail||''});}catch(e){checks.push({name,ok:false,detail:String(e&&e.message||e).slice(0,160)});}};
+ await check('Web poistkapodlupou.sk',async()=>{const r=await fetchImpl('https://poistkapodlupou.sk/?monitor='+now.getTime(),{redirect:'follow'});if(r.status!==200)throw Error('HTTP '+r.status);const t=await r.text();if(!t.includes('Poistka pod Lupou'))throw Error('stránka nemá očakávaný obsah');});
+ await check('Nastavenie služby',async()=>{const miss=['ANTHROPIC_API_KEY','ANTHROPIC_MODEL','SMTP_HOST','SMTP_USER','SMTP_PASS','REVIEWS_ADMIN_TOKEN','TURNSTILE_SECRET'].filter(k=>!env[k]);if(miss.length)throw Error('chýba '+miss.join(', '));});
+ await check('AI (Anthropic)',async()=>{const r=await fetchImpl('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'x-api-key':env.ANTHROPIC_API_KEY||'','anthropic-version':'2023-06-01','content-type':'application/json'},body:JSON.stringify({model:env.ANTHROPIC_MODEL,max_tokens:1,messages:[{role:'user',content:'ok'}]})});if(r.ok)return;let msg='';try{const d=await r.json();msg=d.error&&d.error.message||'';}catch{}throw Error('HTTP '+r.status+(msg?' – '+msg:''));});
+ await check('Odosielanie e-mailov (SMTP)',async()=>{await sendMail({host:env.SMTP_HOST,port:Number(env.SMTP_PORT||465),user:env.SMTP_USER,pass:env.SMTP_PASS,to:env.SMTP_USER,checkOnly:true},connect||(await import('cloudflare:sockets')).connect);});
+ let previous=null,storeOk=true;
+ await check('Úložisko (recenzie, limity, knižnica)',async()=>{const r=await env.REVIEWS.get(env.REVIEWS.idFromName('reviews')).fetch('https://internal/reviews',{method:'POST',body:JSON.stringify({action:'monitor_state'})});if(!r.ok)throw Error('HTTP '+r.status);previous=(await r.json()).previous;}).catch(()=>{});
+ storeOk=checks[checks.length-1].ok;
+ const failed=checks.filter(c=>!c.ok);const key=failed.map(c=>c.name).join('|');
+ const prevKey=previous?previous.key:'';const lastAlert=previous&&previous.alertAt?Date.parse(previous.alertAt):0;
+ let subject='';
+ if(key&&(key!==prevKey||now.getTime()-lastAlert>24*3600e3))subject=`Výpadok na webe Poistka pod Lupou – ${failed.length===1?failed[0].name:failed.length+' problémy'}`;
+ else if(!key&&prevKey)subject='Web Poistka pod Lupou opäť funguje';
+ let sent=false;
+ if(alert&&subject){const lines=[subject,'',...checks.map(c=>`${c.ok?'✓':'✗'} ${c.name}${c.ok?'':' – '+c.detail}`),'',`Kontrola: ${now.toLocaleString('sk-SK',{timeZone:'Europe/Bratislava'})}`,key?'Ďalšie upozornenie príde, keď sa stav zmení, najneskôr o 24 hodín.':''];
+  try{await sendMail({host:env.SMTP_HOST,port:Number(env.SMTP_PORT||465),user:env.SMTP_USER,pass:env.SMTP_PASS,to:env.MONITOR_TO||'dominik@poistkapodlupou.sk',fromName:'Poistka pod Lupou – strážca',subject,text:lines.join('\n')},connect||(await import('cloudflare:sockets')).connect);sent=true;}catch(e){console.log('monitor_alert_failed',String(e&&e.message||e).slice(0,80));}}
+ if(alert&&storeOk&&(key!==prevKey||sent)){try{await env.REVIEWS.get(env.REVIEWS.idFromName('reviews')).fetch('https://internal/reviews',{method:'POST',body:JSON.stringify({action:'monitor_state',state:{key,checkedAt:now.toISOString(),alertAt:sent&&key?now.toISOString():(previous&&key===prevKey?previous.alertAt:null)}})});}catch{}}
+ if(failed.length)console.log('monitor_failed',key);
+ return {ok:!failed.length,checks,alerted:sent};
+}
 export default {async fetch(request,env){
  const response=await handle(request,env);
  const origin=request.headers.get('Origin');
  if(origin&&ORIGINS.includes(origin)){const r=new Response(response.body,response);r.headers.set('Access-Control-Allow-Origin',origin);r.headers.set('Vary','Origin');return r;}
  return response;
-}};
+},
+async scheduled(event,env,ctx){ctx.waitUntil(runMonitor(env));}};
