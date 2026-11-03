@@ -126,7 +126,7 @@ export async function conditionsRoute(request,env,path,fetchImpl=fetch){
  if(path==='/conditions'&&request.method==='GET'){
   const u=new URL(request.url),insurer=u.searchParams.get('insurer'),type=u.searchParams.get('type');
   const list=await (await call({action:'cond_list'})).json();
-  return json(list.filter(c=>(!insurer||c.insurer===insurer)&&(!type||c.type===type)).map(({id,insurer,type,title,code,validFrom})=>({id,insurer,type,title,code,validFrom})));
+  return json(list.filter(c=>c.status!=='pending'&&(!insurer||c.insurer===insurer)&&(!type||c.type===type)).map(({id,insurer,type,title,code,validFrom})=>({id,insurer,type,title,code,validFrom})));
  }
  if(!env.REVIEWS_ADMIN_TOKEN||env.REVIEWS_ADMIN_TOKEN.length<32)return json({error:'admin_not_configured'},503);
  const token=request.headers.get('Authorization')||'';
@@ -164,6 +164,13 @@ export async function conditionsRoute(request,env,path,fetchImpl=fetch){
   const g=await call({action:'cond_get',id:body.id});if(!g.ok)return json({error:'not_found'},404);
   let meta;try{meta=normalizeConditionsMeta(body);}catch(e){return json({error:'invalid_meta',field:e.message},400);}
   const entry={...(await g.json()),...meta,detected:false};await call({action:'cond_put',review:entry});return json(entry);
+ }
+ if(path==='/admin/conditions/approve'&&request.method==='POST'){
+  let body;try{body=JSON.parse(await request.text());}catch{return json({error:'invalid'},400);}
+  if(typeof body.id!=='string'||!/^[0-9a-f-]{36}$/.test(body.id))return json({error:'invalid'},400);
+  const g=await call({action:'cond_get',id:body.id});if(!g.ok)return json({error:'not_found'},404);
+  const {suggestedBy,...entry}=await g.json();entry.status='approved';entry.approved=new Date().toISOString();
+  await call({action:'cond_put',review:entry});return json(entry);
  }
  if(path==='/admin/conditions/delete'&&request.method==='POST'){
   let body;try{body=JSON.parse(await request.text());}catch{return json({error:'invalid'},400);}
@@ -211,7 +218,7 @@ export async function askRoute(request,env,fetchImpl=fetch){
  const store=env.REVIEWS.get(env.REVIEWS.idFromName('reviews'));
  const call=body=>store.fetch('https://internal/ask',{method:'POST',body:JSON.stringify(body)});
  const conds=[];
- for(const id of q.conditionsIds){const g=await call({action:'cond_get',id});if(!g.ok)return json({error:'conditions_not_found'},404);conds.push(await g.json());}
+ for(const id of q.conditionsIds){const g=await call({action:'cond_get',id});if(!g.ok)return json({error:'conditions_not_found'},404);const c=await g.json();if(c.status==='pending')return json({error:'conditions_not_found'},404);conds.push(c);}
  const ip=request.headers.get('CF-Connecting-IP')||'unknown';
  const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode((env.REVIEWS_ADMIN_TOKEN||'ask')+new Date().toISOString().slice(0,10)+'|'+ip));
  const client=Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('').slice(0,32);
@@ -334,6 +341,38 @@ export async function usageAdminRoute(request,env,path){
  }
  return json({error:'method_not_allowed'},405);
 }
+export async function suggestRoute(request,env,fetchImpl=fetch){
+ const origin=request.headers.get('Origin');
+ if(origin&&!ORIGINS.includes(origin))return json({error:'origin_not_allowed'},403);
+ if(request.method==='OPTIONS')return new Response(null,{status:204,headers:{'Access-Control-Allow-Origin':ORIGIN,'Access-Control-Allow-Methods':'POST','Access-Control-Allow-Headers':'Content-Type','Access-Control-Max-Age':'600','Vary':'Origin'}});
+ if(request.method!=='POST'||!origin)return json({error:'method_not_allowed'},405);
+ if(!env.ANTHROPIC_API_KEY||!env.ANTHROPIC_MODEL||!env.REVIEWS)return json({error:'unavailable'},503);
+ if(Number(request.headers.get('Content-Length'))>MAX_CONDITIONS_PDF+65536)return json({error:'too_large'},413);
+ let form;try{form=await request.formData();}catch{return json({error:'invalid_form'},400);}
+ if(form.get('consent')!=='true')return json({error:'consent_required'},400);
+ const file=form.get('file');
+ if(!file||typeof file==='string'||file.size<100||file.size>MAX_CONDITIONS_PDF)return json({error:'invalid_file'},400);
+ const bytes=await file.arrayBuffer();if(String.fromCharCode(...new Uint8Array(bytes.slice(0,5)))!=='%PDF-')return json({error:'invalid_file'},400);
+ const store=env.REVIEWS.get(env.REVIEWS.idFromName('reviews'));
+ const call=body=>store.fetch('https://internal/suggest',{method:'POST',body:JSON.stringify(body)});
+ const sha256=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),b=>b.toString(16).padStart(2,'0')).join('');
+ const existing=await (await call({action:'cond_list'})).json();
+ if(existing.some(c=>c.sha256===sha256))return json({result:'duplicate'});
+ const sess=await useSession(env,String(form.get('session')||''),'suggest');if(!sess.ok)return json({error:sess.error},sess.status);
+ const headers={'x-api-key':env.ANTHROPIC_API_KEY,'anthropic-version':'2023-06-01'};
+ const up=new FormData();up.append('file',new File([bytes],'navrh-z-auditu.pdf',{type:'application/pdf'}));
+ const r=await fetchImpl('https://api.anthropic.com/v1/files',{method:'POST',redirect:'manual',headers,body:up});
+ if(!r.ok)return json({error:'upload_failed'},502);
+ const f=await r.json();if(typeof f.id!=='string')return json({error:'upload_failed'},502);
+ const drop=()=>fetchImpl('https://api.anthropic.com/v1/files/'+encodeURIComponent(f.id),{method:'DELETE',redirect:'manual',headers}).catch(()=>{});
+ let meta;try{meta=await detectConditions(f.id,env,headers,fetchImpl);}catch{await drop();return json({error:'detect_failed'},502);}
+ const norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9áäčďéíĺľňóôŕšťúýž]/g,'');
+ const twin=existing.find(c=>c.insurer===meta.insurer&&c.type===meta.type&&norm(c.title)===norm(meta.title)&&norm(c.code)===norm(meta.code)&&(c.validFrom||'')===(meta.validFrom||''));
+ if(twin){await drop();return json({result:'duplicate'});}
+ const entry={id:crypto.randomUUID(),fileId:f.id,sha256,size:file.size,uploaded:new Date().toISOString(),fileName:'návrh z auditu',status:'pending',source:'audit',suggestedBy:sess.email,...meta};
+ await call({action:'cond_put',review:entry});
+ return json({result:'pending'},201);
+}
 async function handle(request,env){
  const path=new URL(request.url).pathname;
  const publicUpload = path === '/public/extract';
@@ -342,6 +381,7 @@ async function handle(request,env){
  if(path==='/contact')return contactRoute(request,env);
  if(path==='/public/ask')return askRoute(request,env);
  if(path==='/public/chat')return chatRoute(request,env);
+ if(path==='/public/conditions/suggest')return suggestRoute(request,env);
  if(path==='/public/verify/start'||path==='/public/verify/check')return verifyRoute(request,env,path);
  if(path==='/admin/usage'||path==='/admin/block')return usageAdminRoute(request,env,path);
  if(path==='/conditions'||path.startsWith('/admin/conditions'))return conditionsRoute(request,env,path);

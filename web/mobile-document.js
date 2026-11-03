@@ -65,29 +65,32 @@ async function analyzePdf(file) {
   await loadScript(PDF_LIBS.pdfjs);
   const pdfjs = window.pdfjsLib; pdfjs.GlobalWorkerOptions.workerSrc = PDF_LIBS.worker;
   const doc = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
-  const pages = doc.numPages, scores = []; let textChars = 0;
+  const pages = doc.numPages, scores = [], cond = []; let textChars = 0;
   for (let i = 1; i <= pages; i++) {
     const content = await (await doc.getPage(i)).getTextContent();
     const text = content.items.map(it => it.str).join(' ');
-    textChars += text.replace(/\s/g, '').length; scores.push(scorePage(text));
+    textChars += text.replace(/\s/g, '').length; const sc = scorePage(text); scores.push(sc);
+    cond.push(sc < 3 && (CONDITIONS_HINTS[0].test(text) || (text.match(CONDITIONS_HINTS[1]) || []).length >= 3));
   }
   const hasText = textChars > pages * 30;
-  if (pages <= MAX_SEND_PAGES) return { pages, hasText, from: 1, to: pages, needsChoice: false };
-  if (!hasText) return { pages, hasText, from: 1, to: Math.min(pages, 10), needsChoice: true };
+  const condPages = (from, to) => cond.map((c, i) => c && (i + 1 < from || i + 1 > to) ? i + 1 : 0).filter(Boolean);
+  if (pages <= MAX_SEND_PAGES) return { pages, hasText, from: 1, to: pages, needsChoice: false, condPages: hasText ? cond.map((c, i) => c && scores[i] < 3 ? i + 1 : 0).filter(Boolean) : [] };
+  if (!hasText) return { pages, hasText, from: 1, to: Math.min(pages, 10), needsChoice: true, condPages: [] };
   // Best window: start at the strongest page, grow while neighbours still look like the contract.
   let best = 0; scores.forEach((s, i) => { if (s > scores[best]) best = i; });
   let from = best, to = best;
   const good = i => i >= 0 && i < pages && scores[i] >= 3;
   while (to - from + 1 < MAX_SEND_PAGES && (good(from - 1) || good(to + 1))) { if (good(from - 1)) from--; else to++; }
   if (to - from + 1 < 3) { from = Math.max(0, best - 1); to = Math.min(pages - 1, best + 2); }
-  return { pages, hasText, from: from + 1, to: to + 1, needsChoice: true, confident: scores[best] >= 8 };
+  return { pages, hasText, from: from + 1, to: to + 1, needsChoice: true, confident: scores[best] >= 8, condPages: condPages(from + 1, to + 1) };
 }
-async function slicePdf(file, from, to) {
+async function slicePdf(file, from, to) { return slicePdfPages(file, Array.from({ length: to - from + 1 }, (_, i) => from + i)); }
+async function slicePdfPages(file, pageNumbers) {
   await loadScript(PDF_LIBS.pdflib);
   const { PDFDocument } = window.PDFLib;
   const src = await PDFDocument.load(await file.arrayBuffer(), { ignoreEncryption: true });
   const out = await PDFDocument.create();
-  const idx = Array.from({ length: to - from + 1 }, (_, i) => from - 1 + i);
+  const idx = pageNumbers.map(n => n - 1);
   (await out.copyPages(src, idx)).forEach(p => out.addPage(p));
   return new Blob([await out.save()], { type: 'application/pdf' });
 }
