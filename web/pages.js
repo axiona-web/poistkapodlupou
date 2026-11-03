@@ -94,7 +94,11 @@ function aboutPage(){
 
 const reviewEsc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const REVIEW_AREAS=['Poistenie auta','Dom a domácnosť','Cestovné poistenie','Životné poistenie','Iné poistenie','Hypotéka alebo úver','Sporenie alebo dôchodok'];
-function reviewCards(list){const many=list.length>3;return list.length?`<div class="${many?'review-carousel':''}">${many?'<div class="review-nav"><button type="button" class="review-arrow" data-dir="-1" aria-label="Predchádzajúce recenzie">←</button><button type="button" class="review-arrow" data-dir="1" aria-label="Ďalšie recenzie">→</button></div>':''}<div class="${many?'review-track':'review-grid'}" ${many?'tabindex="0" aria-label="Recenzie klientov, posúvajte do strán"':''}>${list.map(r=>`<figure class="review-card"><blockquote>„${reviewEsc(r.text)}“</blockquote><figcaption><b>${reviewEsc(r.name)}</b>${r.city?` · ${reviewEsc(r.city)}`:''}<span>${reviewEsc(r.area||'')}</span></figcaption></figure>`).join('')}</div></div>`:`<div class="review-empty"><img src="assets/life.svg" alt="" width="300" height="200"><div><h2>Prvé slová zbierame.</h2><p>Táto stránka je nová. Ak sme vám už pomohli, budeme radi, keď sa podelíte o svoju skúsenosť ako prví.</p></div></div>`}
+function reviewCards(list){const card=(r,clone)=>`<figure class="review-card"${clone?' aria-hidden="true"':''}><blockquote>„${reviewEsc(r.text)}“</blockquote><figcaption><b>${reviewEsc(r.name)}</b>${r.city?` · ${reviewEsc(r.city)}`:''}<span>${reviewEsc(r.area||'')}</span></figcaption></figure>`;
+ if(!list.length)return `<div class="review-empty"><img src="assets/life.svg" alt="" width="300" height="200"><div><h2>Prvé slová zbierame.</h2><p>Táto stránka je nová. Ak sme vám už pomohli, budeme radi, keď sa podelíte o svoju skúsenosť ako prví.</p></div></div>`;
+ if(list.length<=3)return `<div class="review-grid">${list.map(r=>card(r)).join('')}</div>`;
+ // More than three: one row that keeps moving slowly in a loop (the list is repeated once for a seamless loop).
+ return `<div class="review-marquee" aria-label="Recenzie klientov"><div class="review-run" style="--count:${list.length}">${list.map(r=>card(r)).join('')}${list.map(r=>card(r,true)).join('')}</div></div>`;}
 function reviewsPage(){
  const list=(typeof REVIEWS!=='undefined'?REVIEWS:[]);
  return `<div class="page-shell wrap reviews-page"><a class="back" href="/">← Späť na úvod</a><div class="page-intro"><span class="eyebrow">Recenzie</span><h1>Skúsenosti<br><em>našich klientov.</em></h1><p>Úprimné slová ľudí, ktorým sme pomohli vyznať sa v poistení a financiách.</p></div>
@@ -110,15 +114,8 @@ function reviewsPage(){
  <label class="check-label"><input type="checkbox" name="consent" required><span>Súhlasím so zverejnením recenzie s uvedeným menom a mestom na webe poistkapodlupou.sk. Súhlas môžem kedykoľvek odvolať na ahoj@poistkapodlupou.sk. <a href="/sukromie">Ochrana osobných údajov</a></span></label>
  <button class="btn" type="submit">Odoslať recenziu <span>→</span></button><div id="review-result" role="status" aria-live="polite"></div></form></section></div>`;
 }
-// More than three reviews: one row, three visible, moves by itself every few seconds (pauses on hover, focus or touch).
-function bindReviewCarousel(root){const track=root.querySelector('.review-track');if(!track||track.dataset.bound)return;track.dataset.bound='1';
- const step=()=>{const c=track.querySelector('.review-card');return c?c.getBoundingClientRect().width+parseFloat(getComputedStyle(track).columnGap||18):track.clientWidth;};
- const move=dir=>{const end=track.scrollLeft+track.clientWidth>=track.scrollWidth-4;if(dir>0&&end)track.scrollTo({left:0,behavior:'smooth'});else if(dir<0&&track.scrollLeft<=4)track.scrollTo({left:track.scrollWidth,behavior:'smooth'});else track.scrollBy({left:dir*step(),behavior:'smooth'});};
- root.querySelectorAll('.review-arrow').forEach(b=>b.onclick=()=>{paused=true;move(Number(b.dataset.dir));setTimeout(()=>paused=false,12000);});
- let paused=false;['mouseenter','focusin','touchstart'].forEach(ev=>track.addEventListener(ev,()=>paused=true,{passive:true}));['mouseleave','focusout'].forEach(ev=>track.addEventListener(ev,()=>paused=false));track.addEventListener('touchend',()=>setTimeout(()=>paused=false,8000),{passive:true});
- if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
- const timer=setInterval(()=>{if(!document.body.contains(track)){clearInterval(timer);return;}if(!paused&&!document.hidden)move(1);},6000);
-}
+// Pause the moving row on tap (touch screens have no hover).
+function bindReviewCarousel(root){const m=root.querySelector('.review-marquee');if(!m||m.dataset.bound)return;m.dataset.bound='1';m.addEventListener('click',()=>m.classList.toggle('paused'));}
 function bindReviews(){
  const listEl=document.querySelector('#review-list');
  if(listEl&&typeof REVIEWS_API!=='undefined'){fetch(REVIEWS_API+'/reviews',{credentials:'omit'}).then(r=>r.ok?r.json():[]).then(remote=>{if(!document.body.contains(listEl))return;const all=[...remote,...(typeof REVIEWS!=='undefined'?REVIEWS:[])];if(all.length){listEl.innerHTML=reviewCards(all);bindReviewCarousel(listEl);}}).catch(()=>{});bindReviewCarousel(listEl);}
