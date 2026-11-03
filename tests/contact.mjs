@@ -75,6 +75,8 @@ test('questionnaire PDF is attached; short life form goes to Alexandra', async (
   const log = []; const r = await contactRoute(req({ ...good, name: 'Ján Šťastný', topic: 'Dotazník životného poistenia', audit: 'x', pdf }), env(), fakeSmtp(log));
   assert.equal(r.status, 200); const all = log.join('');
   assert.match(all, /multipart\/mixed/); assert.match(all, /filename="dotaznik-zivotne-poistenie-jan-stastny\.pdf"/); assert.ok(all.includes(pdf));
+  const textPart = Buffer.from(all.split('Content-Transfer-Encoding: base64\r\n\r\n')[1].split('\r\n--')[0].replace(/\r\n/g,''),'base64').toString();
+  assert.match(textPart, /priloženom PDF/); assert.doesNotMatch(textPart, /ODPOVEDE Z DOTAZNÍKA/);
   assert.throws(() => validateContact({ ...good, topic: 'Auto', pdf }));
   assert.throws(() => validateContact({ ...good, topic: 'Dotazník životného poistenia', pdf: Buffer.from('<html>').toString('base64') }));
   const log2 = []; await contactRoute(req({ ...good, topic: 'Životné poistenie' }), env(), fakeSmtp(log2));
