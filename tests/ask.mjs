@@ -14,9 +14,9 @@ test('sends conditions as cached file document and returns answer',async()=>{
  const doc=sent.messages[0].content[0];assert.equal(doc.source.file_id,'file_abc');assert.deepEqual(doc.cache_control,{type:'ephemeral'});
  assert.equal(sent.messages.at(-1).content,body.question);
 });
-test('works without conditions and enforces daily limit',async()=>{
+test('works without conditions and enforces per-person daily limit',async()=>{
  const e=env();const fake=async()=>Response.json({stop_reason:'end_turn',content:[{type:'text',text:'{"answer":"Bez podmienok neviem.","sources":[],"handoff":false}'}]});
- for(let i=0;i<20;i++)assert.equal((await askRoute(req({...body,conditionsId:''}),e,fake)).status,200);
+ for(let i=0;i<10;i++)assert.equal((await askRoute(req({...body,conditionsId:''}),e,fake)).status,200);
  assert.equal((await askRoute(req({...body,conditionsId:''}),e,fake)).status,429);
 });
 test('foreign origin rejected',async()=>{assert.equal((await askRoute(new Request('https://w/public/ask',{method:'POST',headers:{Origin:'https://evil.test'},body:'{}'}),env())).status,403);});
@@ -33,4 +33,13 @@ test('site chat returns only whitelisted links',async()=>{
  const fake=async()=>Response.json({stop_reason:'end_turn',content:[{type:'text',text:JSON.stringify({answer:'Skúste audit.',links:['/audit','/zly'],handoff:false})}]});
  const r=await chatRoute(new Request('https://w/public/chat',{method:'POST',headers:{Origin:'https://poistkapodlupou.sk'},body:JSON.stringify({question:'Čo je spoluúčasť?',history:[]})}),env(),fake);
  assert.equal(r.status,200);const d=await r.json();assert.deepEqual(d.links,[{path:'/audit',label:'Audit poistky'}]);
+});
+
+test('contract questions are capped at 50 per day for everyone together, site chat counts separately',async()=>{
+ const e=env();const fake=async()=>Response.json({stop_reason:'end_turn',content:[{type:'text',text:'{"answer":"ok","sources":[],"handoff":false,"links":[]}'}]});
+ const from=ip=>new Request('https://w/public/ask',{method:'POST',headers:{Origin:'https://poistkapodlupou.sk','CF-Connecting-IP':ip},body:JSON.stringify({...body,conditionsId:''})});
+ let ok=0;for(let i=0;i<60;i++)if((await askRoute(from('10.0.0.'+(i%10)),e,fake)).status===200)ok++;
+ assert.equal(ok,50);
+ const c=await chatRoute(new Request('https://w/public/chat',{method:'POST',headers:{Origin:'https://poistkapodlupou.sk'},body:JSON.stringify({question:'Čo je výluka?'})}),e,fake);
+ assert.equal(c.status,200);
 });

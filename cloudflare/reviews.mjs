@@ -1,6 +1,8 @@
 // Reviews: public submissions wait in a queue until an administrator approves them.
 // E-mail addresses are kept only while a review is pending and are deleted on decision.
 const AREAS = ['Poistenie auta','Dom a domácnosť','Cestovné poistenie','Životné poistenie','Iné poistenie','Hypotéka alebo úver','Sporenie alebo dôchodok'];
+// Daily AI limits. ask = questions about a contract (reads the conditions, costlier); chat = site helper.
+export const RATE_LIMITS = { ask: { perClient: 10, total: 50 }, chat: { perClient: 20, total: 300 } };
 const LIMITS = { name: 40, city: 40, email: 254, text: 600, perClientPerDay: 3, maxPending: 50 };
 
 const clean = value => String(value ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -70,13 +72,15 @@ export class ReviewStore {
     }
     if (action === 'ask_rate') {
       const today = new Date().toISOString().slice(0, 10);
+      const scope = decision === 'chat' ? 'chat' : 'ask';
+      const limits = RATE_LIMITS[scope];
       const ok = await this.storage.transaction(async tx => {
-        const rate = (await tx.get('ask_rate')) || {};
+        const rate = (await tx.get(scope + '_rate')) || {};
         if (rate.day !== today) { rate.day = today; rate.total = 0; rate.clients = {}; }
         const uses = rate.clients[client] || 0;
-        if (uses >= 20 || rate.total >= 300) return false;
+        if (uses >= limits.perClient || rate.total >= limits.total) return false;
         rate.clients[client] = uses + 1; rate.total++;
-        await tx.put('ask_rate', rate);
+        await tx.put(scope + '_rate', rate);
         return true;
       });
       return new Response(null, { status: ok ? 204 : 429 });

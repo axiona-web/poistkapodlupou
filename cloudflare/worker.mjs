@@ -259,7 +259,7 @@ export async function chatRoute(request,env,fetchImpl=fetch){
  const ip=request.headers.get('CF-Connecting-IP')||'unknown';
  const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode((env.REVIEWS_ADMIN_TOKEN||'chat')+new Date().toISOString().slice(0,10)+'|chat|'+ip));
  const client=Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('').slice(0,32);
- if(!(await store.fetch('https://internal/chat',{method:'POST',body:JSON.stringify({action:'ask_rate',client})})).ok)return json({error:'rate_limited'},429);
+ if(!(await store.fetch('https://internal/chat',{method:'POST',body:JSON.stringify({action:'ask_rate',client,decision:'chat'})})).ok)return json({error:'rate_limited'},429);
  const messages=[];for(const h of history){messages.push({role:'user',content:h.q});messages.push({role:'assistant',content:JSON.stringify({answer:h.a,links:[],handoff:false})});}
  messages.push({role:'user',content:question});
  const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),30000);
