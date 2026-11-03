@@ -25,3 +25,16 @@ test('rejects non-PDF; failed detection deletes the uploaded file',async()=>{
  assert.equal((await conditionsRoute(req('/admin/conditions',{method:'POST',headers:auth,body:form()}),env(),'/admin/conditions',fake)).status,502);
  assert.deepEqual(calls,['POST','POST','DELETE']);
 });
+
+test('same file twice is rejected before upload; same document under another file is rejected after detection',async()=>{
+ const e=env();const calls=[];const meta={insurer:'Allianz',type:'pzp',title:'VPP PZP',code:'01/2022',validFrom:'2022-01-01'};
+ const fake=async(url,init)=>{calls.push(url.split('/').pop()+':'+init.method);if(init.method==='DELETE')return new Response('{}');if(url.endsWith('/messages'))return Response.json({stop_reason:'end_turn',content:[{type:'text',text:JSON.stringify(meta)}]});return Response.json({id:'file_'+calls.length});};
+ assert.equal((await conditionsRoute(req('/admin/conditions',{method:'POST',headers:auth,body:form()}),e,'/admin/conditions',fake)).status,201);
+ const n=calls.length;
+ const dup=await conditionsRoute(req('/admin/conditions',{method:'POST',headers:auth,body:form()}),e,'/admin/conditions',fake);
+ assert.equal(dup.status,409);assert.equal((await dup.json()).reason,'same_file');assert.equal(calls.length,n);
+ const other=new Uint8Array(600);other.set(new TextEncoder().encode('%PDF-1.4 other'));
+ const dup2=await conditionsRoute(req('/admin/conditions',{method:'POST',headers:auth,body:form({bytes:other})}),e,'/admin/conditions',fake);
+ assert.equal(dup2.status,409);assert.equal((await dup2.json()).reason,'same_document');assert.ok(calls.at(-1).endsWith(':DELETE'));
+ assert.equal((await (await conditionsRoute(req('/conditions'),e,'/conditions')).json()).length,1);
+});

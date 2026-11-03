@@ -138,15 +138,23 @@ export async function conditionsRoute(request,env,path,fetchImpl=fetch){
   const file=form.get('file');
   if(!file||typeof file==='string'||file.size<100||file.size>MAX_CONDITIONS_PDF)return json({error:'invalid_file'},400);
   const head=new Uint8Array(await file.slice(0,5).arrayBuffer());if(String.fromCharCode(...head)!=='%PDF-')return json({error:'invalid_file'},400);
+  const bytes=await file.arrayBuffer();
+  const sha256=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),b=>b.toString(16).padStart(2,'0')).join('');
+  const existing=await (await call({action:'cond_list'})).json();
+  const same=existing.find(c=>c.sha256===sha256);
+  if(same)return json({error:'duplicate',reason:'same_file',existing:{insurer:same.insurer,type:same.type,title:same.title,code:same.code}},409);
   const headers={'x-api-key':env.ANTHROPIC_API_KEY,'anthropic-version':'2023-06-01'};
-  const up=new FormData();up.append('file',new File([await file.arrayBuffer()],String(file.name||'podmienky.pdf').replace(/[^\w.-]+/g,'_').slice(0,120),{type:'application/pdf'}));
+  const up=new FormData();up.append('file',new File([bytes],String(file.name||'podmienky.pdf').replace(/[^\w.-]+/g,'_').slice(0,120),{type:'application/pdf'}));
   const r=await fetchImpl('https://api.anthropic.com/v1/files',{method:'POST',redirect:'manual',headers,body:up});
   if(!r.ok){const d=await r.text().catch(()=>'');console.log('files_upload_failed',r.status,d.slice(0,200));return json({error:'upload_failed',status:r.status},502);}
   const f=await r.json();if(typeof f.id!=='string')return json({error:'upload_failed'},502);
   let meta;
   try{meta=await detectConditions(f.id,env,headers,fetchImpl);}
   catch(e){console.log('conditions_detect_failed',String(e.message).slice(0,80));await fetchImpl('https://api.anthropic.com/v1/files/'+encodeURIComponent(f.id),{method:'DELETE',redirect:'manual',headers}).catch(()=>{});return json({error:'detect_failed'},502);}
-  const entry={id:crypto.randomUUID(),fileId:f.id,size:file.size,uploaded:new Date().toISOString(),fileName:String(file.name||'').slice(0,120),...meta};
+  const norm=s=>String(s||'').toLowerCase().replace(/[^a-z0-9áäčďéíĺľňóôŕšťúýž]/g,'');
+  const twin=meta.code&&existing.find(c=>c.insurer===meta.insurer&&c.type===meta.type&&norm(c.code)===norm(meta.code)&&(c.validFrom||'')===(meta.validFrom||'')&&norm(c.title)===norm(meta.title));
+  if(twin){await fetchImpl('https://api.anthropic.com/v1/files/'+encodeURIComponent(f.id),{method:'DELETE',redirect:'manual',headers}).catch(()=>{});return json({error:'duplicate',reason:'same_document',existing:{insurer:twin.insurer,type:twin.type,title:twin.title,code:twin.code}},409);}
+  const entry={id:crypto.randomUUID(),fileId:f.id,sha256,size:file.size,uploaded:new Date().toISOString(),fileName:String(file.name||'').slice(0,120),...meta};
   await call({action:'cond_put',review:entry});return json(entry,201);
  }
  if(path==='/admin/conditions/update'&&request.method==='POST'){
