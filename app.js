@@ -26,7 +26,18 @@ disposeFinance();main.innerHTML=html;bindHome();bindLife();bindPages();bindRevie
 document.querySelector('#menu').onclick=()=>{const open=document.querySelector('nav').classList.toggle('open');document.querySelector('#menu').setAttribute('aria-expanded',String(open))};
 function chat(open){document.querySelector('#chat').hidden=!open;document.querySelector('#chat-toggle').setAttribute('aria-expanded',String(open));if(open)document.querySelector('#chat-close').focus();else document.querySelector('#chat-toggle').focus()}
 document.querySelector('#chat-toggle').onclick=()=>chat(document.querySelector('#chat').hidden);document.querySelector('#chat-close').onclick=()=>chat(false);document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.querySelector('#chat').hidden)chat(false)});
-document.querySelectorAll('[data-chat]').forEach(b=>b.onclick=()=>{document.querySelector('#chat-answer').innerHTML={auto:'Pre auto sú dostupné samostatné kalkulačky PZP a KASKO. <a class="text-link" href="/auto">Prejsť na poistenie auta →</a>',dom:'Možnosti poistenia bývania nájdete v partnerskej kalkulačke. <a class="text-link" href="/majetok">Pozrieť poistenie majetku →</a>',clovek:'Kontaktný formulár je pripravený ako náhľad. Odosielanie e-mailom ešte nie je zapojené. <a class="text-link" href="/kontakt">Kontaktné informácie →</a>'}[b.dataset.chat]});if(location.hash.startsWith('#/')){const h=location.hash.slice(2).replace(/^\/+|\/+$/g,'');history.replaceState(null,'','/'+(h?h+'/':''));}
+const chatHist=[];const chatLog=document.querySelector('#chat-log'),chatForm=document.querySelector('#chat-form');
+function chatBubble(cls,text,html=''){const d=document.createElement('div');d.className='ask-msg '+cls;const p=document.createElement('p');p.textContent=text;d.append(p);if(html)d.insertAdjacentHTML('beforeend',html);chatLog.append(d);chatLog.scrollTop=chatLog.scrollHeight;return d;}
+async function chatAsk(q){const btn=chatForm.querySelector('button');btn.disabled=true;chatForm.q.disabled=true;document.querySelector('#chat-options').hidden=true;chatBubble('me',q);const wait=chatBubble('ai pending','Premýšľam…');
+ try{const r=await fetch(REVIEWS_API+'/public/chat',{method:'POST',credentials:'omit',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q,history:chatHist.slice(-4)})});wait.remove();
+  if(r.ok){const d=await r.json();chatHist.push({q,a:d.answer});const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+   chatBubble('ai',d.answer,(d.links.length?'<div class="chat-links">'+d.links.map(l=>`<a href="${esc(l.path)}">${esc(l.label)} →</a>`).join('')+'</div>':'')+(d.handoff?'<div class="chat-links"><a href="/kontakt">Napísať Alexandre alebo Martinovi →</a></div>':''));}
+  else chatBubble('ai err',r.status===429?'Dnes ste položili veľa otázok. Napíšte nám prosím na ahoj@poistkapodlupou.sk.':'Teraz neviem odpovedať. Skúste to znova alebo nám napíšte na ahoj@poistkapodlupou.sk.');
+ }catch{wait.remove();chatBubble('ai err','Spojenie zlyhalo. Skúste to znova.');}
+ finally{btn.disabled=false;chatForm.q.disabled=false;chatForm.q.focus();}}
+chatForm.onsubmit=e=>{e.preventDefault();const q=chatForm.q.value.trim();if(q.length<2)return;chatForm.q.value='';chatAsk(q);};
+document.querySelectorAll('[data-chat]').forEach(b=>b.onclick=()=>chatAsk(b.dataset.chat));
+chatLog.addEventListener('click',e=>{if(e.target.closest('a'))chat(false);});if(location.hash.startsWith('#/')){const h=location.hash.slice(2).replace(/^\/+|\/+$/g,'');history.replaceState(null,'','/'+(h?h+'/':''));}
 function navigate(path){if(path!==location.pathname)history.pushState(null,'',path);render();}
 document.addEventListener('click',e=>{if(e.defaultPrevented||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;const a=e.target.closest('a[href]');if(!a||a.target==='_blank'||a.hasAttribute('download'))return;
  const href=a.getAttribute('href');
