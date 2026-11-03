@@ -55,3 +55,12 @@ test('rate limit after five messages', async () => {
   const e = env(); for (let i = 0; i < 5; i++) assert.equal((await contactRoute(req(good), e, fakeSmtp([]))).status, 200);
   assert.equal((await contactRoute(req(good), e, fakeSmtp([]))).status, 429);
 });
+
+test('audit summary is attached and changes subject', async () => {
+  const log = []; const r = await contactRoute(req({ ...good, topic: 'Moja poistka', audit: 'PZP · Allianz\nLimit: 6 450 000 EUR' }), env(), fakeSmtp(log));
+  assert.equal(r.status, 200);
+  const all = log.join('');
+  assert.match(all, /Subject: =\?UTF-8\?B\?/);
+  assert.ok(Buffer.from(all.split('\r\n\r\n')[1].replace(/\r\n\.\r\nQUIT\r\n$/,'').replace(/\r\n/g,''),'base64').toString().includes('VÝSLEDOK AUDITU'));
+  assert.throws(() => validateContact({ ...good, audit: 'x'.repeat(6001) }));
+});
