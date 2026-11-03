@@ -4,5 +4,6 @@ Disallow: /recenzie-sprava/
 Disallow: /podmienky-sprava/
 Disallow: /pouzitie-sprava/
 Disallow: /audit-pilot/
+Disallow: /formular/
 
 Sitemap: https://poistkapodlupou.sk/sitemap.xml

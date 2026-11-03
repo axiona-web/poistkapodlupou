@@ -71,7 +71,7 @@ async function reviewsRoute(request,env,path){
  }
  return json({error:'method_not_allowed'},405);
 }
-const CONTACT_TOPICS=['Auto','Bývanie','Cestovanie','Práca','Moja poistka','Životné poistenie','Úver alebo hypotéka','Iná otázka'];
+const CONTACT_TOPICS=['Auto','Bývanie','Cestovanie','Práca','Moja poistka','Životné poistenie','Dotazník životného poistenia','Úver alebo hypotéka','Iná otázka'];
 export function validateContact(input){
  const c=v=>String(v??'').replace(/[\u0000-\u001f\u007f]/g,' ').replace(/\s+/g,' ').trim();
  if(!input||typeof input!=='object')throw Error('invalid');
@@ -82,7 +82,7 @@ export function validateContact(input){
  if(m.phone.length>30||(m.phone&&!/^[+0-9 ()/-]{6,30}$/.test(m.phone)))throw Error('phone');
  if(!CONTACT_TOPICS.includes(m.topic))throw Error('topic');
  if(m.message.length<10||m.message.length>2000)throw Error('message');
- if(input.audit!==undefined){if(typeof input.audit!=='string'||input.audit.length>6000)throw Error('audit');m.audit=input.audit.replace(/\r/g,'').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g,'').trim();}
+ if(input.audit!==undefined){if(typeof input.audit!=='string'||input.audit.length>12000)throw Error('audit');m.audit=input.audit.replace(/\r/g,'').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g,'').trim();}
  return m;
 }
 export async function contactRoute(request,env,connect){
@@ -92,16 +92,16 @@ export async function contactRoute(request,env,connect){
  if(request.method!=='POST')return json({error:'method_not_allowed'},405);
  if(!origin)return json({error:'origin_not_allowed'},403);
  if(!env.SMTP_HOST||!env.SMTP_USER||!env.SMTP_PASS||!env.REVIEWS)return json({error:'contact_unavailable'},503);
- let m;try{const t=await request.text();if(t.length>16384)return json({error:'too_large'},413);m=validateContact(JSON.parse(t));}catch(e){return json({error:'invalid_contact',field:e.message},400);}
+ let m;try{const t=await request.text();if(t.length>32768)return json({error:'too_large'},413);m=validateContact(JSON.parse(t));}catch(e){return json({error:'invalid_contact',field:e.message},400);}
  const ip=request.headers.get('CF-Connecting-IP')||'unknown';
  const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(env.SMTP_PASS+new Date().toISOString().slice(0,10)+'|'+ip));
  const client=Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('').slice(0,32);
  const store=env.REVIEWS.get(env.REVIEWS.idFromName('reviews'));
  const rate=await store.fetch('https://internal/reviews',{method:'POST',body:JSON.stringify({action:'contact_rate',client})});
  if(!rate.ok)return json({error:'rate_limited'},429);
- const to=m.topic==='Úver alebo hypotéka'?(env.CONTACT_FINANCE_TO||'dominik@poistkapodlupou.sk'):(env.CONTACT_TO||'ahoj@poistkapodlupou.sk');
- const text=[`Nová správa z webu poistkapodlupou.sk`,``,`Meno: ${m.name}`,`E-mail: ${m.email}`,`Telefón: ${m.phone||'-'}`,`Téma: ${m.topic}`,``,`Správa:`,m.message,...(m.audit?[``,`=== VÝSLEDOK AUDITU Z WEBU ===`,m.audit]:[]),``,`---`,`Odpovedzte priamo na tento e-mail, odpoveď pôjde odosielateľovi.`].join('\n');
- try{await sendMail({host:env.SMTP_HOST,port:Number(env.SMTP_PORT||465),user:env.SMTP_USER,pass:env.SMTP_PASS,to,replyTo:m.email,fromName:'Poistka pod Lupou – web',subject:m.audit?`Audit poistky – ${m.name}`:`Web: ${m.topic} – ${m.name}`,text},connect||(await import('cloudflare:sockets')).connect);}
+ const to=['Úver alebo hypotéka','Dotazník životného poistenia'].includes(m.topic)?(env.CONTACT_FINANCE_TO||'dominik@poistkapodlupou.sk'):(env.CONTACT_TO||'ahoj@poistkapodlupou.sk');
+ const text=[`Nová správa z webu poistkapodlupou.sk`,``,`Meno: ${m.name}`,`E-mail: ${m.email}`,`Telefón: ${m.phone||'-'}`,`Téma: ${m.topic}`,``,`Správa:`,m.message,...(m.audit?[``,m.topic==='Dotazník životného poistenia'?`=== ODPOVEDE Z DOTAZNÍKA ===`:`=== VÝSLEDOK AUDITU Z WEBU ===`,m.audit]:[]),``,`---`,`Odpovedzte priamo na tento e-mail, odpoveď pôjde odosielateľovi.`].join('\n');
+ try{await sendMail({host:env.SMTP_HOST,port:Number(env.SMTP_PORT||465),user:env.SMTP_USER,pass:env.SMTP_PASS,to,replyTo:m.email,fromName:'Poistka pod Lupou – web',subject:m.topic==='Dotazník životného poistenia'?`Dotazník životného poistenia – ${m.name}`:m.audit?`Audit poistky – ${m.name}`:`Web: ${m.topic} – ${m.name}`,text},connect||(await import('cloudflare:sockets')).connect);}
  catch(e){const step=String(e&&e.message||e).replace(/[^a-z0-9_ :.-]/gi,'').slice(0,60);console.log('contact_send_failed',step);return json({error:'send_failed',step},502);}
  return json({ok:true});
 }

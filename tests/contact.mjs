@@ -62,5 +62,10 @@ test('audit summary is attached and changes subject', async () => {
   const all = log.join('');
   assert.match(all, /Subject: =\?UTF-8\?B\?/);
   assert.ok(Buffer.from(all.split('\r\n\r\n')[1].replace(/\r\n\.\r\nQUIT\r\n$/,'').replace(/\r\n/g,''),'base64').toString().includes('VÝSLEDOK AUDITU'));
-  assert.throws(() => validateContact({ ...good, audit: 'x'.repeat(6001) }));
+  assert.throws(() => validateContact({ ...good, audit: 'x'.repeat(12001) }));
+});
+
+test('life questionnaire goes to Martin with its own subject', async () => {
+  const log = []; const r = await contactRoute(req({ ...good, topic: 'Dotazník životného poistenia', audit: 'Osobné údaje\n- Meno: Ján' }), env(), fakeSmtp(log));
+  assert.equal(r.status, 200); assert.match(log.join(''), /RCPT TO:<dominik@poistkapodlupou\.sk>/);
 });
