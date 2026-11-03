@@ -5,9 +5,18 @@ const b64 = s => btoa(String.fromCharCode(...enc.encode(s)));
 const header = s => String(s).replace(/[\r\n]+/g, ' ').trim();
 const encodeWord = s => /^[\x20-\x7e]*$/.test(s) ? s : `=?UTF-8?B?${b64(s)}?=`;
 
-export function buildMessage({ from, fromName, to, replyTo, subject, text, date = new Date(), id = crypto.randomUUID() }) {
+const wrap = s => s.replace(/.{1,76}/g, '$&\r\n');
+export function buildMessage({ from, fromName, to, replyTo, subject, text, attachments = [], date = new Date(), id = crypto.randomUUID() }) {
   const domain = from.split('@')[1];
-  const body = b64(text.replace(/\r?\n/g, '\r\n')).replace(/.{1,76}/g, '$&\r\n');
+  const textBody = wrap(b64(text.replace(/\r?\n/g, '\r\n')));
+  let contentHeaders = ['Content-Type: text/plain; charset=UTF-8', 'Content-Transfer-Encoding: base64'], body = textBody;
+  if (attachments.length) {
+    const boundary = 'pl-' + id.replace(/[^a-z0-9]/gi, '');
+    contentHeaders = [`Content-Type: multipart/mixed; boundary="${boundary}"`];
+    body = [`--${boundary}`, 'Content-Type: text/plain; charset=UTF-8', 'Content-Transfer-Encoding: base64', '', textBody,
+      ...attachments.flatMap(a => { const name = header(a.filename).replace(/[^A-Za-z0-9._-]/g, '_'); return [`--${boundary}`, `Content-Type: ${header(a.contentType || 'application/octet-stream')}; name="${name}"`, 'Content-Transfer-Encoding: base64', `Content-Disposition: attachment; filename="${name}"`, '', wrap(String(a.data).replace(/[^A-Za-z0-9+/=]/g, ''))]; }),
+      `--${boundary}--`, ''].join('\r\n');
+  }
   return [
     `From: ${encodeWord(header(fromName))} <${header(from)}>`,
     `To: <${header(to)}>`,
@@ -16,8 +25,7 @@ export function buildMessage({ from, fromName, to, replyTo, subject, text, date 
     `Date: ${date.toUTCString().replace('GMT', '+0000')}`,
     `Message-ID: <${id}@${domain}>`,
     'MIME-Version: 1.0',
-    'Content-Type: text/plain; charset=UTF-8',
-    'Content-Transfer-Encoding: base64',
+    ...contentHeaders,
     '',
     body
   ].filter(l => l !== null).join('\r\n');
