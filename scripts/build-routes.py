@@ -18,6 +18,12 @@ pages = (WEB / 'pages.js').read_text(encoding='utf-8')
 for slug, _, title, desc in re.findall(r"\['([a-z-]+)','(Základy|Auto|Bývanie|Cestovanie|Práca)','([^']+)','([^']+)'", pages):
     meta[f'rady/{slug}'] = [f'{title} | Poistka pod Lupou', desc]
 
+faq_src = (WEB / 'faq.js').read_text(encoding='utf-8')
+faq_items = json.loads(faq_src[faq_src.index('['):faq_src.index('];') + 1])
+faq_ld = json.dumps({'@context': 'https://schema.org', '@type': 'FAQPage', 'mainEntity': [
+    {'@type': 'Question', 'name': q, 'acceptedAnswer': {'@type': 'Answer', 'text': re.sub(r'<[^>]+>', '', a)}} for q, a in faq_items]},
+    ensure_ascii=False).replace('</', '<\\/')
+
 def page(route, info):
     title, desc = info[0], info[1]
     robots = info[2] if len(info) > 2 else ''
@@ -31,6 +37,8 @@ def page(route, info):
     out = re.sub(r'<link rel="canonical" href="[^"]*">', f'<link rel="canonical" href="{url}">', out, count=1)
     out = re.sub(r'<meta property="og:url" content="[^"]*">', f'<meta property="og:url" content="{url}">', out, count=1)
     out = re.sub(r'<meta name="robots" content="[^"]*">', '', out)
+    if route == 'otazky':
+        out = out.replace('</head>', f'<script type="application/ld+json">{faq_ld}</script></head>', 1)
     if robots:
         out = out.replace('<base href="/">', f'<base href="/"><meta name="robots" content="{robots}">', 1)
     return out
