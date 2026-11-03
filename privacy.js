@@ -41,9 +41,10 @@ function cookiesPage() {
   const rows=[
    ['poistka-theme','Zapamätá si svetlý alebo tmavý motív.','Nevyhnutné (vaša voľba)','Do zmeny alebo vymazania údajov prehliadača'],
    ['poistka-privacy-v1','Zapamätá si, či ste povolili kalkulačky Finportalu.','Nevyhnutné (vaša voľba)','180 dní'],
+   ['Cloudflare Turnstile','Overí, že žiadosť o overovací kód posiela človek, nie robot. Načíta sa len pri overení e-mailu v Audite poistky.','Nevyhnutné (bezpečnosť služby)','Podľa pravidiel Cloudflare; nepoužíva sa na reklamu ani sledovanie'],
    ['Finportal (iframe a skript)','Zobrazí finančné kalkulačky priamo na stránke Kalkulačky a prispôsobí ich výšku.','Tretia strana, iba so súhlasom','Podľa pravidiel Finportalu']
   ];
-  return article('Cookies a ukladanie v prehliadači', `<p class="lead">Na webe nepoužívame reklamné ani analytické cookies a nesledujeme vás. V prehliadači si ukladáme iba dve vaše voľby. Obsah tretej strany načítame až po vašom súhlase.</p>
+  return article('Cookies a ukladanie v prehliadači', `<p class="lead">Na webe nepoužívame reklamné ani analytické cookies a nesledujeme vás. V prehliadači si ukladáme iba dve vaše voľby. Kalkulačky tretej strany načítame až po vašom súhlase. Pri overení e-mailu použijeme ochranu Cloudflare Turnstile.</p>
   <h2>Čo ukladáme</h2>${legalTable(['Názov','Na čo slúži','Typ','Ako dlho'],rows)}
   <p>Obe naše položky ukladáme do lokálneho úložiska prehliadača (localStorage), nie do klasických cookies. Neodchádzajú na žiadny server a nevidíme ich.</p>
   <h2>Kalkulačky Finportalu</h2><p>Finančné kalkulačky prevádzkuje Finportal, a. s. Ak ich povolíte, prehliadač sa pri otvorení stránky Kalkulačky spojí so serverom Finportalu. Ten dostane technické údaje o pripojení vrátane IP adresy a môže používať vlastné cookies. Údaje, ktoré do kalkulačky zadáte, spracúva Finportal podľa svojich pravidiel. Ak kalkulačky nepovolíte, môžete ich otvoriť samostatným odkazom na webe Finportalu.</p>
