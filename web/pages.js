@@ -115,7 +115,11 @@ function reviewsPage(){
  <button class="btn" type="submit">Odoslať recenziu <span>→</span></button><div id="review-result" role="status" aria-live="polite"></div></form></section></div>`;
 }
 // Pause the moving row on tap (touch screens have no hover).
-function bindReviewCarousel(root){const m=root.querySelector('.review-marquee');if(!m||m.dataset.bound)return;m.dataset.bound='1';m.addEventListener('click',()=>m.classList.toggle('paused'));}
+function bindReviewCarousel(root){const m=root.querySelector('.review-marquee');if(!m||m.dataset.bound)return;m.dataset.bound='1';m.addEventListener('click',()=>m.classList.toggle('paused'));
+ // Card width and speed in pixels (works the same in every browser): 3 cards on desktop, 2 on tablet, 1 and a bit on phones.
+ const run=m.querySelector('.review-run'),n=Number(run.style.getPropertyValue('--count'))||run.children.length/2;
+ const size=()=>{if(!document.body.contains(m)){removeEventListener('resize',size);return;}const w=m.clientWidth||m.parentElement.clientWidth;const per=w>900?3:w>560?2:1.28;const card=Math.max(220,Math.floor((w-18*(Math.ceil(per)-1))/per));run.style.setProperty('--rc',card+'px');run.style.animationDuration=Math.round(n*(card+18)/34)+'s';};
+ size();addEventListener('resize',size);}
 function bindReviews(){
  const listEl=document.querySelector('#review-list');
  if(listEl&&typeof REVIEWS_API!=='undefined'){fetch(REVIEWS_API+'/reviews',{credentials:'omit'}).then(r=>r.ok?r.json():[]).then(remote=>{if(!document.body.contains(listEl))return;const all=[...remote,...(typeof REVIEWS!=='undefined'?REVIEWS:[])];if(all.length){listEl.innerHTML=reviewCards(all);bindReviewCarousel(listEl);}}).catch(()=>{});bindReviewCarousel(listEl);}
