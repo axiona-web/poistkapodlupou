@@ -2,6 +2,7 @@ User-agent: *
 Allow: /
 Disallow: /recenzie-sprava/
 Disallow: /podmienky-sprava/
+Disallow: /pouzitie-sprava/
 Disallow: /audit-pilot/
 
 Sitemap: https://poistkapodlupou.sk/sitemap.xml
