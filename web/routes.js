@@ -18,5 +18,6 @@ const ROUTE_META = {
   "pravne": ["Právne informácie | Poistka pod Lupou", "Informácie o finančných agentoch, registrácii v NBS a dohľade nad finančným sprostredkovaním."],
   "instagram": ["Instagram | Poistka pod Lupou", "Praktické tipy k poisteniu na Instagrame pripravujeme."],
   "recenzie-sprava": ["Správa recenzií | Poistka pod Lupou", "", "noindex"],
+  "podmienky-sprava": ["Knižnica podmienok | Poistka pod Lupou", "", "noindex"],
   "audit-pilot": ["Audit – test | Poistka pod Lupou", "", "noindex"]
 };

@@ -96,12 +96,56 @@ export async function contactRoute(request,env,connect){
  catch(e){const step=String(e&&e.message||e).replace(/[^a-z0-9_ :.-]/gi,'').slice(0,60);console.log('contact_send_failed',step);return json({error:'send_failed',step},502);}
  return json({ok:true});
 }
+const MAX_CONDITIONS_PDF=30*1024*1024;
+export async function conditionsRoute(request,env,path,fetchImpl=fetch){
+ const origin=request.headers.get('Origin');
+ if(origin&&!ORIGINS.includes(origin))return json({error:'origin_not_allowed'},403);
+ if(request.method==='OPTIONS')return new Response(null,{status:204,headers:{'Access-Control-Allow-Origin':ORIGIN,'Access-Control-Allow-Methods':'GET, POST','Access-Control-Allow-Headers':'Content-Type, Authorization','Access-Control-Max-Age':'600','Vary':'Origin'}});
+ if(!env.REVIEWS)return json({error:'unavailable'},503);
+ const store=env.REVIEWS.get(env.REVIEWS.idFromName('reviews'));
+ const call=body=>store.fetch('https://internal/conditions',{method:'POST',body:JSON.stringify(body)});
+ if(path==='/conditions'&&request.method==='GET'){
+  const u=new URL(request.url),insurer=u.searchParams.get('insurer'),type=u.searchParams.get('type');
+  const list=await (await call({action:'cond_list'})).json();
+  return json(list.filter(c=>(!insurer||c.insurer===insurer)&&(!type||c.type===type)).map(({id,insurer,type,title,code,validFrom})=>({id,insurer,type,title,code,validFrom})));
+ }
+ if(!env.REVIEWS_ADMIN_TOKEN||env.REVIEWS_ADMIN_TOKEN.length<32)return json({error:'admin_not_configured'},503);
+ const token=request.headers.get('Authorization')||'';
+ if(token.length>256||!await equal(token,'Bearer '+env.REVIEWS_ADMIN_TOKEN))return json({error:'unauthorized'},401);
+ if(path==='/admin/conditions'&&request.method==='GET')return json(await (await call({action:'cond_list'})).json());
+ if(path==='/admin/conditions'&&request.method==='POST'){
+  if(!env.ANTHROPIC_API_KEY)return json({error:'provider_not_configured'},503);
+  if(Number(request.headers.get('Content-Length'))>MAX_CONDITIONS_PDF+65536)return json({error:'too_large'},413);
+  let form;try{form=await request.formData();}catch{return json({error:'invalid_form'},400);}
+  const file=form.get('file'),c=v=>String(v??'').replace(/[\u0000-\u001f\u007f]/g,' ').replace(/\s+/g,' ').trim();
+  const meta={insurer:c(form.get('insurer')),type:c(form.get('type')),title:c(form.get('title')),code:c(form.get('code')),validFrom:c(form.get('validFrom'))};
+  if(!INSURERS.includes(meta.insurer)||meta.insurer==='Iná'||!TYPES.includes(meta.type))return json({error:'invalid_meta',field:'insurer_type'},400);
+  if(meta.title.length<3||meta.title.length>200||meta.code.length>80||!/^(\d{4}-\d{2}-\d{2})?$/.test(meta.validFrom))return json({error:'invalid_meta',field:'title_code_date'},400);
+  if(!file||typeof file==='string'||file.size<100||file.size>MAX_CONDITIONS_PDF)return json({error:'invalid_file'},400);
+  const head=new Uint8Array(await file.slice(0,5).arrayBuffer());if(String.fromCharCode(...head)!=='%PDF-')return json({error:'invalid_file'},400);
+  const up=new FormData();up.append('file',new File([await file.arrayBuffer()],`${meta.insurer}-${meta.type}-${meta.code||'vpp'}.pdf`.replace(/[^\w.-]+/g,'_'),{type:'application/pdf'}));
+  const r=await fetchImpl('https://api.anthropic.com/v1/files',{method:'POST',redirect:'manual',headers:{'x-api-key':env.ANTHROPIC_API_KEY,'anthropic-version':'2023-06-01'},body:up});
+  if(!r.ok){const d=await r.text().catch(()=>'');console.log('files_upload_failed',r.status,d.slice(0,200));return json({error:'upload_failed',status:r.status},502);}
+  const f=await r.json();if(typeof f.id!=='string')return json({error:'upload_failed'},502);
+  const entry={id:crypto.randomUUID(),fileId:f.id,size:file.size,uploaded:new Date().toISOString(),...meta};
+  await call({action:'cond_put',review:entry});return json(entry,201);
+ }
+ if(path==='/admin/conditions/delete'&&request.method==='POST'){
+  let body;try{body=JSON.parse(await request.text());}catch{return json({error:'invalid'},400);}
+  if(typeof body.id!=='string'||!/^[0-9a-f-]{36}$/.test(body.id))return json({error:'invalid'},400);
+  const g=await call({action:'cond_get',id:body.id});if(!g.ok)return json({error:'not_found'},404);const entry=await g.json();
+  if(env.ANTHROPIC_API_KEY)await fetchImpl('https://api.anthropic.com/v1/files/'+encodeURIComponent(entry.fileId),{method:'DELETE',redirect:'manual',headers:{'x-api-key':env.ANTHROPIC_API_KEY,'anthropic-version':'2023-06-01'}}).catch(()=>{});
+  await call({action:'cond_delete',id:body.id});return json({ok:true});
+ }
+ return json({error:'method_not_allowed'},405);
+}
 async function handle(request,env){
  const path=new URL(request.url).pathname;
  const publicUpload = path === '/public/extract';
  if(path==='/health'&&request.method==='GET')return json({service:'poistka-audit',revision:'mobile-1',mode:'limited',public_uploads:Boolean(env.AUDIT_QUOTA)});
  if(path==='/reviews'||path==='/admin/reviews')return reviewsRoute(request,env,path);
  if(path==='/contact')return contactRoute(request,env);
+ if(path==='/conditions'||path==='/admin/conditions'||path==='/admin/conditions/delete')return conditionsRoute(request,env,path);
  if(!publicUpload && path!=='/extract')return json({error:'not_found'},404);
  if(request.headers.get('Origin')&&!ORIGINS.includes(request.headers.get('Origin')))return json({error:'origin_not_allowed'},403);
  if(request.method==='OPTIONS')return new Response(null,{status:204,headers:{'Access-Control-Allow-Origin':ORIGIN,'Access-Control-Allow-Methods':'POST','Access-Control-Allow-Headers':'Content-Type, Authorization','Vary':'Origin'}});

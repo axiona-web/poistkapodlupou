@@ -68,6 +68,22 @@ export class ReviewStore {
       });
       return new Response(null, { status: ok ? 204 : 429 });
     }
+    if (action === 'cond_list') {
+      const items = await this.storage.list({ prefix: 'cond:' });
+      return Response.json([...items.values()].sort((a, b) => (a.insurer + a.type + b.validFrom).localeCompare(b.insurer + b.type + a.validFrom)));
+    }
+    if (action === 'cond_put') {
+      await this.storage.put('cond:' + review.id, review);
+      return Response.json({ ok: true });
+    }
+    if (action === 'cond_get') {
+      const item = await this.storage.get('cond:' + id);
+      return item ? Response.json(item) : Response.json({ error: 'not_found' }, { status: 404 });
+    }
+    if (action === 'cond_delete') {
+      await this.storage.delete('cond:' + id);
+      return Response.json({ ok: true });
+    }
     if (action === 'admin_list') {
       return Response.json((await this.all()).map(r => ({ ...r })));
     }
