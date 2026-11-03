@@ -68,6 +68,19 @@ export class ReviewStore {
       });
       return new Response(null, { status: ok ? 204 : 429 });
     }
+    if (action === 'ask_rate') {
+      const today = new Date().toISOString().slice(0, 10);
+      const ok = await this.storage.transaction(async tx => {
+        const rate = (await tx.get('ask_rate')) || {};
+        if (rate.day !== today) { rate.day = today; rate.total = 0; rate.clients = {}; }
+        const uses = rate.clients[client] || 0;
+        if (uses >= 20 || rate.total >= 300) return false;
+        rate.clients[client] = uses + 1; rate.total++;
+        await tx.put('ask_rate', rate);
+        return true;
+      });
+      return new Response(null, { status: ok ? 204 : 429 });
+    }
     if (action === 'cond_list') {
       const items = await this.storage.list({ prefix: 'cond:' });
       return Response.json([...items.values()].sort((a, b) => (a.insurer + a.type + b.validFrom).localeCompare(b.insurer + b.type + a.validFrom)));
