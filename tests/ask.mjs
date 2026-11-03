@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { askRoute, validateAsk } from '../cloudflare/worker.mjs';
+import { askRoute, validateAsk, chatRoute } from '../cloudflare/worker.mjs';
 import { ReviewStore } from '../cloudflare/reviews.mjs';
 function memoryStorage(){const map=new Map();const api={async get(k){return structuredClone(map.get(k));},async put(k,v){map.set(k,structuredClone(v));},async delete(k){map.delete(k);},async list({prefix}){return new Map([...map].filter(([k])=>k.startsWith(prefix)));},async transaction(fn){return fn(api);}};return api;}
 function env(){const storage=memoryStorage();storage.put('cond:11111111-1111-1111-1111-111111111111',{id:'11111111-1111-1111-1111-111111111111',fileId:'file_abc',title:'VPP PZP',code:'13'});const s=new ReviewStore({storage});return{ANTHROPIC_API_KEY:'k',ANTHROPIC_MODEL:'m',REVIEWS_ADMIN_TOKEN:'a'.repeat(40),REVIEWS:{idFromName:()=>'x',get:()=>({fetch:(_,init)=>s.fetch(new Request('https://i',init))})}};}
@@ -27,4 +27,10 @@ test('accepts up to three condition documents, caches only the last',async()=>{
  assert.equal((await askRoute(req({...body,conditionsId:undefined,conditionsIds:[id,id]}),e,fake)).status,200);
  assert.equal(sent.messages[0].content.filter(c=>c.type==='document').length,1);
  assert.throws(()=>validateAsk({...body,conditionsIds:[id,id,id,id]}));
+});
+
+test('site chat returns only whitelisted links',async()=>{
+ const fake=async()=>Response.json({stop_reason:'end_turn',content:[{type:'text',text:JSON.stringify({answer:'Skúste audit.',links:['/audit','/zly'],handoff:false})}]});
+ const r=await chatRoute(new Request('https://w/public/chat',{method:'POST',headers:{Origin:'https://poistkapodlupou.sk'},body:JSON.stringify({question:'Čo je spoluúčasť?',history:[]})}),env(),fake);
+ assert.equal(r.status,200);const d=await r.json();assert.deepEqual(d.links,[{path:'/audit',label:'Audit poistky'}]);
 });
