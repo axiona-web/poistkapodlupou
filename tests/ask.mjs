@@ -3,8 +3,12 @@ import assert from 'node:assert/strict';
 import { askRoute, validateAsk, chatRoute } from '../cloudflare/worker.mjs';
 import { ReviewStore } from '../cloudflare/reviews.mjs';
 function memoryStorage(){const map=new Map();const api={async get(k){return structuredClone(map.get(k));},async put(k,v){map.set(k,structuredClone(v));},async delete(k){map.delete(k);},async list({prefix}){return new Map([...map].filter(([k])=>k.startsWith(prefix)));},async transaction(fn){return fn(api);}};return api;}
-function env(){const storage=memoryStorage();storage.put('cond:11111111-1111-1111-1111-111111111111',{id:'11111111-1111-1111-1111-111111111111',fileId:'file_abc',title:'VPP PZP',code:'13'});const s=new ReviewStore({storage});return{ANTHROPIC_API_KEY:'k',ANTHROPIC_MODEL:'m',REVIEWS_ADMIN_TOKEN:'a'.repeat(40),REVIEWS:{idFromName:()=>'x',get:()=>({fetch:(_,init)=>s.fetch(new Request('https://i',init))})}};}
-const body={type:'pzp',insurer:'Generali',question:'Aký mám limit na zdravie?',fields:[{label:'Limit zdravie',value:'6 450 000 EUR',page:1}],history:[],conditionsId:'11111111-1111-1111-1111-111111111111',consent:true};
+import { createHash } from 'node:crypto';
+const shaHex=s=>createHash('sha256').update(s).digest('hex');
+const TOK=i=>String(i).padStart(64,'a');
+function addSessions(storage,n=1){for(let i=0;i<n;i++)storage.put('sess:'+shaHex(TOK(i)),{email:`u${i}@example.sk`,expires:Date.now()+3600000});}
+function env(){const storage=memoryStorage();addSessions(storage,8);storage.put('cond:11111111-1111-1111-1111-111111111111',{id:'11111111-1111-1111-1111-111111111111',fileId:'file_abc',title:'VPP PZP',code:'13'});const s=new ReviewStore({storage});return{ANTHROPIC_API_KEY:'k',ANTHROPIC_MODEL:'m',REVIEWS_ADMIN_TOKEN:'a'.repeat(40),REVIEWS:{idFromName:()=>'x',get:()=>({fetch:(_,init)=>s.fetch(new Request('https://i',init))})}};}
+const body={session:TOK(0),type:'pzp',insurer:'Generali',question:'Aký mám limit na zdravie?',fields:[{label:'Limit zdravie',value:'6 450 000 EUR',page:1}],history:[],conditionsId:'11111111-1111-1111-1111-111111111111',consent:true};
 const req=b=>new Request('https://w/public/ask',{method:'POST',headers:{Origin:'https://poistkapodlupou.sk','Content-Type':'application/json'},body:JSON.stringify(b)});
 test('validation requires consent and sane input',()=>{assert.throws(()=>validateAsk({...body,consent:false}));assert.throws(()=>validateAsk({...body,question:'x'.repeat(501)}));assert.throws(()=>validateAsk({...body,conditionsId:'../x'}));});
 test('sends conditions as cached file document and returns answer',async()=>{
@@ -18,6 +22,7 @@ test('works without conditions and enforces per-person daily limit',async()=>{
  const e=env();const fake=async()=>Response.json({stop_reason:'end_turn',content:[{type:'text',text:'{"answer":"Bez podmienok neviem.","sources":[],"handoff":false}'}]});
  for(let i=0;i<10;i++)assert.equal((await askRoute(req({...body,conditionsId:''}),e,fake)).status,200);
  assert.equal((await askRoute(req({...body,conditionsId:''}),e,fake)).status,429);
+ assert.equal((await askRoute(req({...body,session:'b'.repeat(64)}),e,fake)).status,401);
 });
 test('foreign origin rejected',async()=>{assert.equal((await askRoute(new Request('https://w/public/ask',{method:'POST',headers:{Origin:'https://evil.test'},body:'{}'}),env())).status,403);});
 
@@ -37,8 +42,8 @@ test('site chat returns only whitelisted links',async()=>{
 
 test('contract questions are capped at 50 per day for everyone together, site chat counts separately',async()=>{
  const e=env();const fake=async()=>Response.json({stop_reason:'end_turn',content:[{type:'text',text:'{"answer":"ok","sources":[],"handoff":false,"links":[]}'}]});
- const from=ip=>new Request('https://w/public/ask',{method:'POST',headers:{Origin:'https://poistkapodlupou.sk','CF-Connecting-IP':ip},body:JSON.stringify({...body,conditionsId:''})});
- let ok=0;for(let i=0;i<60;i++)if((await askRoute(from('10.0.0.'+(i%10)),e,fake)).status===200)ok++;
+ const from=i=>new Request('https://w/public/ask',{method:'POST',headers:{Origin:'https://poistkapodlupou.sk','CF-Connecting-IP':'10.0.0.'+i},body:JSON.stringify({...body,session:TOK(i%8),conditionsId:''})});
+ let ok=0;for(let i=0;i<64;i++)if((await askRoute(from(i),e,fake)).status===200)ok++;
  assert.equal(ok,50);
  const c=await chatRoute(new Request('https://w/public/chat',{method:'POST',headers:{Origin:'https://poistkapodlupou.sk'},body:JSON.stringify({question:'Čo je výluka?'})}),e,fake);
  assert.equal(c.status,200);

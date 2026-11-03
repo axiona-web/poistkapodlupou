@@ -196,7 +196,7 @@ export function validateAsk(input){
  if(raw.length>3)throw Error('conditions');
  const conditionsIds=[...new Set(raw.map(x=>s(x,40)))];
  if(conditionsIds.some(x=>!/^[0-9a-f-]{36}$/.test(x)))throw Error('conditions');
- return {type:input.type,insurer:input.insurer||'',question,fields,history,conditionsIds};
+ return {type:input.type,insurer:input.insurer||'',question,fields,history,conditionsIds,session:typeof input.session==='string'?input.session.slice(0,80):''};
 }
 export async function askRoute(request,env,fetchImpl=fetch){
  const origin=request.headers.get('Origin');
@@ -206,6 +206,7 @@ export async function askRoute(request,env,fetchImpl=fetch){
  if(!origin)return json({error:'origin_not_allowed'},403);
  if(!env.ANTHROPIC_API_KEY||!env.ANTHROPIC_MODEL||!env.REVIEWS)return json({error:'unavailable'},503);
  let q;try{const t=await request.text();if(t.length>65536)return json({error:'too_large'},413);q=validateAsk(JSON.parse(t));}catch(e){return json({error:'invalid',field:e.message},400);}
+ const sess=await useSession(env,q.session,'ask');if(!sess.ok)return json({error:sess.error},sess.status);
  const store=env.REVIEWS.get(env.REVIEWS.idFromName('reviews'));
  const call=body=>store.fetch('https://internal/ask',{method:'POST',body:JSON.stringify(body)});
  const conds=[];
@@ -273,6 +274,65 @@ export async function chatRoute(request,env,fetchImpl=fetch){
  }catch{return json({error:'provider_error'},502);}
  finally{clearTimeout(timer);}
 }
+const EMAIL_RE=/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+async function clientHash(env,request,scope){const ip=request.headers.get('CF-Connecting-IP')||'unknown';const d=await crypto.subtle.digest('SHA-256',new TextEncoder().encode((env.REVIEWS_ADMIN_TOKEN||'x')+new Date().toISOString().slice(0,10)+'|'+scope+'|'+ip));return Array.from(new Uint8Array(d),b=>b.toString(16).padStart(2,'0')).join('').slice(0,32);}
+async function turnstileOk(env,token,request,fetchImpl){
+ if(!env.TURNSTILE_SECRET)return true;
+ if(typeof token!=='string'||!token||token.length>4096)return false;
+ const body=new FormData();body.append('secret',env.TURNSTILE_SECRET);body.append('response',token);const ip=request.headers.get('CF-Connecting-IP');if(ip)body.append('remoteip',ip);
+ try{const r=await fetchImpl('https://challenges.cloudflare.com/turnstile/v0/siteverify',{method:'POST',body});const d=await r.json();return d.success===true;}catch{return false;}
+}
+export async function verifyRoute(request,env,path,deps={}){
+ const fetchImpl=deps.fetch||fetch;
+ const origin=request.headers.get('Origin');
+ if(origin&&!ORIGINS.includes(origin))return json({error:'origin_not_allowed'},403);
+ if(request.method==='OPTIONS')return new Response(null,{status:204,headers:{'Access-Control-Allow-Origin':ORIGIN,'Access-Control-Allow-Methods':'POST','Access-Control-Allow-Headers':'Content-Type','Access-Control-Max-Age':'600','Vary':'Origin'}});
+ if(request.method!=='POST'||!origin)return json({error:'method_not_allowed'},405);
+ if(!env.REVIEWS||!env.SMTP_HOST||!env.SMTP_USER||!env.SMTP_PASS)return json({error:'unavailable'},503);
+ let b;try{const t=await request.text();if(t.length>8192)return json({error:'too_large'},413);b=JSON.parse(t);}catch{return json({error:'invalid'},400);}
+ const email=String(b.email||'').trim().toLowerCase();
+ if(email.length>254||!EMAIL_RE.test(email))return json({error:'invalid',field:'email'},400);
+ const store=env.REVIEWS.get(env.REVIEWS.idFromName('reviews'));
+ const call=body=>store.fetch('https://internal/verify',{method:'POST',body:JSON.stringify(body)});
+ if(path==='/public/verify/start'){
+  if(!await turnstileOk(env,b.turnstile,request,fetchImpl))return json({error:'captcha'},400);
+  const r=await call({action:'verify_start',review:{email},client:await clientHash(env,request,'verify')});
+  const d=await r.json();if(!r.ok)return json({error:d.error},r.status);
+  try{await sendMail({host:env.SMTP_HOST,port:Number(env.SMTP_PORT||465),user:env.SMTP_USER,pass:env.SMTP_PASS,to:email,fromName:'Poistka pod Lupou',subject:`Váš overovací kód: ${d.code}`,text:[`Dobrý deň,`,``,`váš kód na overenie e-mailu pre Audit poistky je:`,``,`    ${d.code}`,``,`Kód platí 15 minút. Ak ste o kód nežiadali, tento e-mail môžete ignorovať.`,``,`Poistka pod Lupou`,`https://poistkapodlupou.sk`].join('\n')},deps.connect||(await import('cloudflare:sockets')).connect);}
+  catch(e){console.log('verify_mail_failed',String(e&&e.message||e).slice(0,60));return json({error:'send_failed'},502);}
+  return json({ok:true});
+ }
+ if(path==='/public/verify/check'){
+  const code=String(b.code||'').replace(/\D/g,'');if(code.length!==6)return json({error:'wrong_code'},400);
+  const r=await call({action:'verify_check',review:{email,code}});const d=await r.json();
+  return r.ok?json({token:d.token,email,hours:24}):json({error:d.error},400);
+ }
+ return json({error:'not_found'},404);
+}
+export async function useSession(env,token,kind){
+ if(!env.REVIEWS)return {ok:false,status:503,error:'unavailable'};
+ const store=env.REVIEWS.get(env.REVIEWS.idFromName('reviews'));
+ const r=await store.fetch('https://internal/session',{method:'POST',body:JSON.stringify({action:'session_use',review:{token,kind}})});
+ const d=await r.json();return r.ok?{ok:true,email:d.email}:{ok:false,status:r.status,error:d.error};
+}
+export async function usageAdminRoute(request,env,path){
+ const origin=request.headers.get('Origin');
+ if(origin&&!ORIGINS.includes(origin))return json({error:'origin_not_allowed'},403);
+ if(request.method==='OPTIONS')return new Response(null,{status:204,headers:{'Access-Control-Allow-Origin':ORIGIN,'Access-Control-Allow-Methods':'GET, POST','Access-Control-Allow-Headers':'Content-Type, Authorization','Access-Control-Max-Age':'600','Vary':'Origin'}});
+ if(!env.REVIEWS_ADMIN_TOKEN||env.REVIEWS_ADMIN_TOKEN.length<32)return json({error:'admin_not_configured'},503);
+ const token=request.headers.get('Authorization')||'';
+ if(token.length>256||!await equal(token,'Bearer '+env.REVIEWS_ADMIN_TOKEN))return json({error:'unauthorized'},401);
+ const store=env.REVIEWS.get(env.REVIEWS.idFromName('reviews'));
+ const call=body=>store.fetch('https://internal/usage',{method:'POST',body:JSON.stringify(body)});
+ if(path==='/admin/usage'&&request.method==='GET')return json(await (await call({action:'usage_list'})).json());
+ if(path==='/admin/block'&&request.method==='POST'){
+  let b;try{b=JSON.parse(await request.text());}catch{return json({error:'invalid'},400);}
+  const v=String(b.value||'').trim().toLowerCase();
+  if(!(EMAIL_RE.test(v)||/^@[a-z0-9.-]+\.[a-z]{2,}$/.test(v)))return json({error:'invalid'},400);
+  await call({action:'block_set',review:{value:v,blocked:b.blocked!==false}});return json({ok:true});
+ }
+ return json({error:'method_not_allowed'},405);
+}
 async function handle(request,env){
  const path=new URL(request.url).pathname;
  const publicUpload = path === '/public/extract';
@@ -281,6 +341,8 @@ async function handle(request,env){
  if(path==='/contact')return contactRoute(request,env);
  if(path==='/public/ask')return askRoute(request,env);
  if(path==='/public/chat')return chatRoute(request,env);
+ if(path==='/public/verify/start'||path==='/public/verify/check')return verifyRoute(request,env,path);
+ if(path==='/admin/usage'||path==='/admin/block')return usageAdminRoute(request,env,path);
  if(path==='/conditions'||path.startsWith('/admin/conditions'))return conditionsRoute(request,env,path);
  if(!publicUpload && path!=='/extract')return json({error:'not_found'},404);
  if(request.headers.get('Origin')&&!ORIGINS.includes(request.headers.get('Origin')))return json({error:'origin_not_allowed'},403);
@@ -315,6 +377,8 @@ async function handle(request,env){
   if (publicUpload) {
    if (!env.AUDIT_QUOTA || env.ANTHROPIC_MODEL !== 'claude-sonnet-5-5') return json({error:'public_unavailable'},503);
    if (input.consent !== true) return json({error:'consent_required'},400);
+   const sess = await useSession(env, input.session, 'extract');
+   if (!sess.ok) return json({error: sess.error}, sess.status);
    const ip = request.headers.get('CF-Connecting-IP');
    if (!ip) return json({error:'public_unavailable'},503);
    const salt = env.TEST_ACCESS_TOKEN + new Date().toISOString().slice(0,10);

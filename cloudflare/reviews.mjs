@@ -5,6 +5,9 @@ const AREAS = ['Poistenie auta','Dom a domácnosť','Cestovné poistenie','Živo
 export const RATE_LIMITS = { ask: { perClient: 10, total: 50 }, chat: { perClient: 20, total: 300 } };
 const LIMITS = { name: 40, city: 40, email: 254, text: 600, perClientPerDay: 3, maxPending: 50 };
 
+export const VERIFY_LIMITS = { codesPerEmail: 3, codesPerClient: 6, codesTotal: 200, attempts: 5, codeMinutes: 15, sessionHours: 24, extractPerEmail: 2, askPerEmail: 10, usageDays: 90 };
+const sha = async text => Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))), b => b.toString(16).padStart(2, '0')).join('');
+const isBlocked = (blocks, email) => Boolean(blocks[email] || blocks['@' + email.split('@')[1]]);
 const clean = value => String(value ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim();
 
 export function validateSubmission(input) {
@@ -84,6 +87,69 @@ export class ReviewStore {
         return true;
       });
       return new Response(null, { status: ok ? 204 : 429 });
+    }
+    if (action === 'verify_start') {
+      const { email } = review; const today = new Date().toISOString().slice(0, 10);
+      const result = await this.storage.transaction(async tx => {
+        if (isBlocked((await tx.get('blocks')) || {}, email)) return { error: 'blocked' };
+        const rate = (await tx.get('verify_rate')) || {};
+        if (rate.day !== today) { rate.day = today; rate.total = 0; rate.emails = {}; rate.clients = {}; }
+        if ((rate.emails[email] || 0) >= VERIFY_LIMITS.codesPerEmail || (rate.clients[client] || 0) >= VERIFY_LIMITS.codesPerClient || rate.total >= VERIFY_LIMITS.codesTotal) return { error: 'rate_limited' };
+        rate.emails[email] = (rate.emails[email] || 0) + 1; rate.clients[client] = (rate.clients[client] || 0) + 1; rate.total++;
+        await tx.put('verify_rate', rate);
+        const code = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, '0');
+        await tx.put('code:' + email, { hash: await sha(email + '|' + code), expires: Date.now() + VERIFY_LIMITS.codeMinutes * 60000, attempts: 0 });
+        return { code };
+      });
+      return Response.json(result, { status: result.error ? (result.error === 'blocked' ? 403 : 429) : 200 });
+    }
+    if (action === 'verify_check') {
+      const { email, code } = review;
+      const result = await this.storage.transaction(async tx => {
+        const entry = await tx.get('code:' + email);
+        if (!entry || entry.expires < Date.now()) return { error: 'expired' };
+        if (entry.attempts >= VERIFY_LIMITS.attempts) return { error: 'too_many_attempts' };
+        if (entry.hash !== await sha(email + '|' + code)) { entry.attempts++; await tx.put('code:' + email, entry); return { error: 'wrong_code' }; }
+        await tx.delete('code:' + email);
+        const token = Array.from(crypto.getRandomValues(new Uint8Array(32)), b => b.toString(16).padStart(2, '0')).join('');
+        await tx.put('sess:' + await sha(token), { email, expires: Date.now() + VERIFY_LIMITS.sessionHours * 3600000 });
+        const usage = (await tx.get('usage:' + email)) || { email, first: new Date().toISOString(), extracts: 0, questions: 0, verifications: 0 };
+        usage.verifications++; usage.last = new Date().toISOString();
+        await tx.put('usage:' + email, usage);
+        return { token };
+      });
+      return Response.json(result, { status: result.error ? 400 : 200 });
+    }
+    if (action === 'session_use') {
+      const { token, kind } = review; const today = new Date().toISOString().slice(0, 10);
+      const result = await this.storage.transaction(async tx => {
+        if (typeof token !== 'string' || !/^[0-9a-f]{64}$/.test(token)) return { error: 'unverified', status: 401 };
+        const key = 'sess:' + await sha(token); const sess = await tx.get(key);
+        if (!sess || sess.expires < Date.now()) { if (sess) await tx.delete(key); return { error: 'unverified', status: 401 }; }
+        if (isBlocked((await tx.get('blocks')) || {}, sess.email)) return { error: 'blocked', status: 403 };
+        const usage = (await tx.get('usage:' + sess.email)) || { email: sess.email, first: new Date().toISOString(), extracts: 0, questions: 0, verifications: 0 };
+        if (usage.day !== today) { usage.day = today; usage.dayExtracts = 0; usage.dayQuestions = 0; }
+        if (kind === 'extract' && usage.dayExtracts >= VERIFY_LIMITS.extractPerEmail) return { error: 'email_limit', status: 429 };
+        if (kind === 'ask' && usage.dayQuestions >= VERIFY_LIMITS.askPerEmail) return { error: 'email_limit', status: 429 };
+        if (kind === 'extract') { usage.dayExtracts++; usage.extracts++; }
+        if (kind === 'ask') { usage.dayQuestions++; usage.questions++; }
+        usage.last = new Date().toISOString();
+        await tx.put('usage:' + sess.email, usage);
+        return { email: sess.email };
+      });
+      return Response.json(result, { status: result.status || 200 });
+    }
+    if (action === 'usage_list') {
+      const cutoff = new Date(Date.now() - VERIFY_LIMITS.usageDays * 86400000).toISOString();
+      const items = [...(await this.storage.list({ prefix: 'usage:' })).entries()];
+      for (const [k, v] of items) if ((v.last || v.first) < cutoff) await this.storage.delete(k);
+      const blocks = (await this.storage.get('blocks')) || {};
+      return Response.json({ usage: items.map(([, v]) => v).filter(v => (v.last || v.first) >= cutoff).map(v => ({ ...v, blocked: isBlocked(blocks, v.email) })).sort((a, b) => (b.last || '').localeCompare(a.last || '')), blocks: Object.keys(blocks).sort() });
+    }
+    if (action === 'block_set') {
+      const { value, blocked } = review;
+      await this.storage.transaction(async tx => { const blocks = (await tx.get('blocks')) || {}; if (blocked) blocks[value] = new Date().toISOString(); else delete blocks[value]; await tx.put('blocks', blocks); });
+      return Response.json({ ok: true });
     }
     if (action === 'cond_list') {
       const items = await this.storage.list({ prefix: 'cond:' });
