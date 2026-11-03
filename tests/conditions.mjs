@@ -38,3 +38,10 @@ test('same file twice is rejected before upload; same document under another fil
  assert.equal(dup2.status,409);assert.equal((await dup2.json()).reason,'same_document');assert.ok(calls.at(-1).endsWith(':DELETE'));
  assert.equal((await (await conditionsRoute(req('/conditions'),e,'/conditions')).json()).length,1);
 });
+test('detection reads only the preview pages when the browser sends them',async()=>{
+ const e=env();let body;const fake=async(url,init)=>{if(url.endsWith('/messages')){body=JSON.parse(init.body);return Response.json({stop_reason:'end_turn',content:[{type:'text',text:JSON.stringify({insurer:'Allianz',type:'pzp',title:'VPP PZP',code:'X1',validFrom:''})}]});}return Response.json({id:'file_9'});};
+ const f=form();const pv=new Uint8Array(300);pv.set(new TextEncoder().encode('%PDF-1.7 preview'));f.append('preview',new File([pv],'nahlad.pdf',{type:'application/pdf'}));
+ const r=await conditionsRoute(req('/admin/conditions',{method:'POST',headers:auth,body:f}),e,'/admin/conditions',fake);
+ assert.equal(r.status,201);assert.equal((await r.json()).fileId,'file_9');
+ const src=body.messages[0].content[0].source;assert.equal(src.type,'base64');assert.ok(Buffer.from(src.data,'base64').toString().startsWith('%PDF-1.7 preview'));
+});
