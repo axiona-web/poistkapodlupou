@@ -65,7 +65,7 @@ async function reviewsRoute(request,env,path){
  }
  return json({error:'method_not_allowed'},405);
 }
-const CONTACT_TOPICS=['Auto','Bývanie','Cestovanie','Práca','Moja poistka','Úver alebo hypotéka','Iná otázka'];
+const CONTACT_TOPICS=['Auto','Bývanie','Cestovanie','Práca','Moja poistka','Životné poistenie','Úver alebo hypotéka','Iná otázka'];
 export function validateContact(input){
  const c=v=>String(v??'').replace(/[\u0000-\u001f\u007f]/g,' ').replace(/\s+/g,' ').trim();
  if(!input||typeof input!=='object')throw Error('invalid');

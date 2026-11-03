@@ -13,7 +13,7 @@ function lifePage() {
       ${options('health','Ako by ste opísali svoj aktuálny zdravotný stav?',['Bez ťažkostí','Mám mierne alebo občasné ťažkosti','Mám dlhodobé alebo závažnejšie ťažkosti','Radšej preberiem osobne'])}</section>
       <section hidden><h2>3. Krytie a rozpočet</h2>${options('cover','Ktoré riziká chcete prebrať? Môžete vybrať viac možností.',['Úmrtie','Invalidita','Závažné ochorenie','Trvalé následky úrazu','Práceneschopnosť','Hospitalizácia'],true)}
       ${options('budget','Koľko chcete mesačne vyčleniť na poistenie?',['Do 25 €','Nad 25 až 50 €','Nad 50 až 75 €','Nad 75 až 100 €','Viac ako 100 €','Ešte neviem'])}<p class="note">Ide o váš rozpočet. Cenu ponuky určí poisťovňa.</p></section>
-      <section hidden><h2>Váš prehľad</h2><dl id="life-summary"></dl><p>Na konzultáciu môžete otvoriť pripravený e-mail. Obsahuje vek, pracovné postavenie, druh práce, vybrané krytie a rozpočet. Výška, hmotnosť a odpoveď o zdraví zostanú na tejto stránke. Odošlete ho vo svojej e-mailovej aplikácii.</p><a class="btn" id="life-email">Pripraviť e-mail na konzultáciu →</a></section>
+      <section hidden><h2>Váš prehľad</h2><dl id="life-summary"></dl><p>Pošleme Alexandre vek, pracovné postavenie, druh práce, vybrané krytie a rozpočet. <b>Výška, hmotnosť a odpoveď o zdraví zostanú len na tejto stránke</b>, preberiete ich osobne.</p><div class="life-contact"><div class="form-row"><label>Meno<input name="cname" minlength="2" maxlength="100" autocomplete="name"></label><label>E-mail<input name="cemail" type="email" maxlength="254" autocomplete="email"></label></div><label>Telefón <span class="optional">(nepovinné)</span><input name="cphone" type="tel" maxlength="30" autocomplete="tel" placeholder="+421"></label><label class="hp" aria-hidden="true">Webstránka<input name="website" tabindex="-1" autocomplete="off"></label><label class="check-label"><input type="checkbox" name="cconsent"><span>Súhlasím, aby Mgr. Alexandra Čurillová, s.&nbsp;r.&nbsp;o. použila tieto údaje na prípravu konzultácie. <a href="/sukromie">Ochrana osobných údajov</a></span></label><button type="button" class="btn" id="life-send">Poslať Alexandre <span>→</span></button><div id="life-result" role="status" aria-live="polite"></div></div></section>
       <div class="audit-step-bottom"><button type="button" class="audit-back" id="life-back" hidden>← Späť</button><span id="life-progress">Krok 1 z 3</span><button type="submit" class="btn" id="life-next">Pokračovať →</button></div>
     </form></article>`;
 }
@@ -53,10 +53,25 @@ function bindLife() {
         term.textContent = label; detail.textContent = value; summary.append(term,detail);
       }
       const body = 'Dobrý deň, mám záujem o konzultáciu k životnému poisteniu.\nVek: '+form.elements.age.value+'\nPostavenie: '+selected('status')+'\nPráca: '+selected('work')+'\nKrytie: '+cover+'\nMesačný rozpočet: '+budget;
-      form.querySelector('#life-email').href = 'mailto:ahoj@poistkapodlupou.sk?subject='+encodeURIComponent('Životné poistenie – konzultácia')+'&body='+encodeURIComponent(body);
+      form.dataset.body = body;
     }
     display(current+1);
   };
   form.querySelector('#life-back').onclick = () => display(current-1);
+  form.querySelector('#life-send').onclick = async () => {
+    const out = form.querySelector('#life-result'), btn = form.querySelector('#life-send');
+    const name = form.elements.cname, email = form.elements.cemail, consent = form.elements.cconsent;
+    for (const [el, ok] of [[name, name.value.trim().length >= 2], [email, /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.value.trim())], [consent, consent.checked]]) {
+      el.setCustomValidity(ok ? '' : (el === consent ? 'Potvrďte súhlas.' : 'Vyplňte prosím.'));
+      if (!ok) { el.reportValidity(); return; }
+    }
+    btn.disabled = true; out.className = ''; out.textContent = 'Odosielam…';
+    try {
+      const r = await fetch(REVIEWS_API + '/contact', { method: 'POST', credentials: 'omit', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name.value, email: email.value, phone: form.elements.cphone.value, topic: 'Životné poistenie', message: form.dataset.body || 'Záujem o konzultáciu k životnému poisteniu.', website: form.elements.website.value }) });
+      if (r.ok) { out.className = 'ok'; out.textContent = 'Odoslané. Alexandra sa vám ozve spravidla do jedného pracovného dňa.'; btn.hidden = true; }
+      else { out.className = 'err'; out.innerHTML = r.status === 429 ? 'Dnes ste nám už poslali viac správ. Napíšte prosím na <a href="mailto:ahoj@poistkapodlupou.sk">ahoj@poistkapodlupou.sk</a>.' : 'Odoslanie sa nepodarilo. Napíšte prosím na <a href="mailto:ahoj@poistkapodlupou.sk">ahoj@poistkapodlupou.sk</a>.'; }
+    } catch { out.className = 'err'; out.textContent = 'Spojenie zlyhalo. Skúste to znova.'; }
+    finally { btn.disabled = false; }
+  };
   display(0,false);
 }
