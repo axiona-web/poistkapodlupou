@@ -20,3 +20,11 @@ test('works without conditions and enforces daily limit',async()=>{
  assert.equal((await askRoute(req({...body,conditionsId:''}),e,fake)).status,429);
 });
 test('foreign origin rejected',async()=>{assert.equal((await askRoute(new Request('https://w/public/ask',{method:'POST',headers:{Origin:'https://evil.test'},body:'{}'}),env())).status,403);});
+
+test('accepts up to three condition documents, caches only the last',async()=>{
+ const e=env();let sent;const fake=async(u,i)=>{sent=JSON.parse(i.body);return Response.json({stop_reason:'end_turn',content:[{type:'text',text:'{"answer":"ok","sources":[],"handoff":false}'}]});};
+ const id='11111111-1111-1111-1111-111111111111';
+ assert.equal((await askRoute(req({...body,conditionsId:undefined,conditionsIds:[id,id]}),e,fake)).status,200);
+ assert.equal(sent.messages[0].content.filter(c=>c.type==='document').length,1);
+ assert.throws(()=>validateAsk({...body,conditionsIds:[id,id,id,id]}));
+});

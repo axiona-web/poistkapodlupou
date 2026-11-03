@@ -192,9 +192,11 @@ export function validateAsk(input){
  const question=s(input.question,500);if(question.length<3)throw Error('question');
  const fields=Array.isArray(input.fields)?input.fields.slice(0,80).map(f=>({label:s(f.label,200),value:s(f.value,600),page:Number.isInteger(f.page)&&f.page>0&&f.page<500?f.page:null})):[];
  const history=Array.isArray(input.history)?input.history.slice(-4).map(h=>({q:s(h.q,500),a:s(h.a,1500)})):[];
- const conditionsId=input.conditionsId?s(input.conditionsId,40):'';
- if(conditionsId&&!/^[0-9a-f-]{36}$/.test(conditionsId))throw Error('conditions');
- return {type:input.type,insurer:input.insurer||'',question,fields,history,conditionsId};
+ const raw=Array.isArray(input.conditionsIds)?input.conditionsIds:(input.conditionsId?[input.conditionsId]:[]);
+ if(raw.length>3)throw Error('conditions');
+ const conditionsIds=[...new Set(raw.map(x=>s(x,40)))];
+ if(conditionsIds.some(x=>!/^[0-9a-f-]{36}$/.test(x)))throw Error('conditions');
+ return {type:input.type,insurer:input.insurer||'',question,fields,history,conditionsIds};
 }
 export async function askRoute(request,env,fetchImpl=fetch){
  const origin=request.headers.get('Origin');
@@ -206,16 +208,16 @@ export async function askRoute(request,env,fetchImpl=fetch){
  let q;try{const t=await request.text();if(t.length>65536)return json({error:'too_large'},413);q=validateAsk(JSON.parse(t));}catch(e){return json({error:'invalid',field:e.message},400);}
  const store=env.REVIEWS.get(env.REVIEWS.idFromName('reviews'));
  const call=body=>store.fetch('https://internal/ask',{method:'POST',body:JSON.stringify(body)});
- let cond=null;
- if(q.conditionsId){const g=await call({action:'cond_get',id:q.conditionsId});if(!g.ok)return json({error:'conditions_not_found'},404);cond=await g.json();}
+ const conds=[];
+ for(const id of q.conditionsIds){const g=await call({action:'cond_get',id});if(!g.ok)return json({error:'conditions_not_found'},404);conds.push(await g.json());}
  const ip=request.headers.get('CF-Connecting-IP')||'unknown';
  const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode((env.REVIEWS_ADMIN_TOKEN||'ask')+new Date().toISOString().slice(0,10)+'|'+ip));
  const client=Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('').slice(0,32);
  if(!(await call({action:'ask_rate',client})).ok)return json({error:'rate_limited'},429);
  const contract=q.fields.length?q.fields.map(f=>`- ${f.label}: ${f.value}${f.page?` (zmluva, str. ${f.page})`:''}`).join('\n'):'Klient zmluvu nenahral, máš len typ poistenia a poisťovňu.';
  const context=[];
- if(cond)context.push({type:'document',source:{type:'file',file_id:cond.fileId},title:`Poistné podmienky: ${cond.title}${cond.code?' ('+cond.code+')':''}`,cache_control:{type:'ephemeral'}});
- context.push({type:'text',text:`Typ poistenia: ${q.type}. Poisťovňa: ${q.insurer||'neuvedená'}.\nPodmienky: ${cond?'priložené vyššie':'NIE SÚ priložené'}.\nÚdaje zo zmluvy potvrdené klientom:\n${contract}`});
+ conds.forEach((c,i)=>context.push({type:'document',source:{type:'file',file_id:c.fileId},title:`Poistné podmienky: ${c.title}${c.code?' ('+c.code+')':''}`,...(i===conds.length-1?{cache_control:{type:'ephemeral'}}:{})}));
+ context.push({type:'text',text:`Typ poistenia: ${q.type}. Poisťovňa: ${q.insurer||'neuvedená'}.\nPodmienky: ${conds.length?'priložené vyššie ('+conds.map(c=>c.code||c.title).join('; ')+'). Ak sa osobitné podmienky (OPP) odlišujú od všeobecných (VPP), majú prednosť osobitné; pri citácii uveď, z ktorého dokumentu je.':'NIE SÚ priložené'}.\nÚdaje zo zmluvy potvrdené klientom:\n${contract}`});
  const messages=[{role:'user',content:[...context,{type:'text',text:'Rozumiem, budem sa pýtať na túto zmluvu.'}]},{role:'assistant',content:'{"answer":"Dobre, pýtajte sa.","sources":[],"handoff":false}'}];
  for(const h of q.history){messages.push({role:'user',content:h.q});messages.push({role:'assistant',content:JSON.stringify({answer:h.a,sources:[],handoff:false})});}
  messages.push({role:'user',content:q.question});
@@ -226,7 +228,7 @@ export async function askRoute(request,env,fetchImpl=fetch){
   const d=await r.json();if(d.stop_reason!=='end_turn')return json({error:'incomplete'},502);
   const out=JSON.parse((d.content||[]).filter(b=>b.type==='text').map(b=>b.text).join(''));
   if(typeof out.answer!=='string'||!out.answer.trim())return json({error:'incomplete'},502);
-  return json({answer:out.answer.slice(0,2500),sources:(Array.isArray(out.sources)?out.sources:[]).filter(x=>typeof x==='string').slice(0,8).map(x=>x.slice(0,200)),handoff:out.handoff===true,withConditions:Boolean(cond)});
+  return json({answer:out.answer.slice(0,2500),sources:(Array.isArray(out.sources)?out.sources:[]).filter(x=>typeof x==='string').slice(0,8).map(x=>x.slice(0,200)),handoff:out.handoff===true,withConditions:conds.length>0,conditionsCount:conds.length});
  }catch{return json({error:controller.signal.aborted?'provider_timeout':'provider_error'},502);}
  finally{clearTimeout(timer);}
 }
