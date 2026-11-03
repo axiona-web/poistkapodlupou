@@ -42,3 +42,14 @@ test('missing configuration is reported and admin endpoint needs the key', async
   assert.equal((await worker.fetch(new Request('https://w/admin/monitor', { method: 'POST' }), e)).status, 401);
   assert.equal(typeof worker.scheduled, 'function');
 });
+
+test('AI cost estimate and daily budget block public AI', async () => {
+  const { aiCost, recordAi, overBudget } = await import('../cloudflare/worker.mjs');
+  assert.equal(Math.round(aiCost({ input_tokens: 1e6, output_tokens: 1e5, cache_read_input_tokens: 1e6 }) * 100) / 100, 4.8);
+  const e = env(); e.AI_DAILY_BUDGET_USD = '1';
+  assert.equal(await overBudget(e), false);
+  await recordAi(e, { input_tokens: 400000 }, 'ask');
+  assert.equal(await overBudget(e), true);
+  const r = await runMonitor(e, { fetchImpl: fetchWith(200), connect: smtp([]), alert: false });
+  assert.equal(r.checks.find(c => c.name === 'Denný rozpočet AI').ok, false);
+});

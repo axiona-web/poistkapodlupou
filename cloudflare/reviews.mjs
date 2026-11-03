@@ -39,6 +39,17 @@ export class ReviewStore {
 
   async fetch(request) {
     const { action, review, client, id, decision, state } = await request.json();
+    if (action === 'ai_spend') {
+      const key = 'ai:' + review.day;
+      await this.storage.transaction(async tx => { const d = (await tx.get(key)) || { usd: 0, calls: {} }; d.usd = Math.round((d.usd + Math.max(0, Number(review.usd) || 0)) * 1e6) / 1e6; d.calls[review.kind] = (d.calls[review.kind] || 0) + 1; await tx.put(key, d); });
+      return Response.json({ ok: true });
+    }
+    if (action === 'ai_today') return Response.json({ usd: ((await this.storage.get('ai:' + review.day)) || { usd: 0 }).usd });
+    if (action === 'ai_stats') {
+      const all = [...(await this.storage.list({ prefix: 'ai:' }))].map(([k, v]) => ({ day: k.slice(3), ...v })).sort((a, b) => a.day < b.day ? 1 : -1);
+      for (const old of all.slice(62)) await this.storage.delete('ai:' + old.day);
+      return Response.json(all.slice(0, 31));
+    }
     if (action === 'monitor_state') {
       const previous = (await this.storage.get('monitor')) || null;
       if (state) await this.storage.put('monitor', state);

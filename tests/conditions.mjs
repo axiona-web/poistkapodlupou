@@ -45,3 +45,16 @@ test('detection reads only the preview pages when the browser sends them',async(
  assert.equal(r.status,201);assert.equal((await r.json()).fileId,'file_9');
  const src=body.messages[0].content[0].source;assert.equal(src.type,'base64');assert.ok(Buffer.from(src.data,'base64').toString().startsWith('%PDF-1.7 preview'));
 });
+test('text version is stored, used for questions and added to an existing entry on re-upload',async()=>{
+ const e=env();const uploads=[];let detectBody;const fake=async(url,init)=>{if(url.endsWith('/messages')){detectBody=JSON.parse(init.body);return Response.json({stop_reason:'end_turn',usage:{input_tokens:1000,output_tokens:50},content:[{type:'text',text:JSON.stringify({insurer:'Allianz',type:'pzp',title:'VPP PZP',code:'T1',validFrom:''})}]});}const f=init.body.get('file');uploads.push(f.type);return Response.json({id:f.type==='text/plain'?'file_txt':'file_pdf'});};
+ const text='=== Strana 1 ===\n'+'Všeobecné poistné podmienky '.repeat(20);
+ const f1=form();const r1=await conditionsRoute(req('/admin/conditions',{method:'POST',headers:auth,body:f1}),e,'/admin/conditions',fake);
+ assert.equal(r1.status,201);const entry=await r1.json();assert.equal(entry.textFileId,undefined);
+ const f2=form();f2.append('text',new File([text],'podmienky.txt',{type:'text/plain'}));
+ const r2=await conditionsRoute(req('/admin/conditions',{method:'POST',headers:auth,body:f2}),e,'/admin/conditions',fake);
+ assert.equal(r2.status,200);assert.equal((await r2.json()).result,'text_added');
+ const list=await (await conditionsRoute(req('/admin/conditions',{headers:auth}),e,'/admin/conditions',fake)).json();
+ assert.equal(list[0].textFileId,'file_txt');assert.deepEqual(uploads,['application/pdf','text/plain']);
+ const stats=await (await e.REVIEWS.get().fetch('https://i',{method:'POST',body:JSON.stringify({action:'ai_stats'})})).json();
+ assert.ok(stats[0].usd>0.003&&stats[0].calls.detect===1);
+});
