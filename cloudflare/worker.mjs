@@ -36,6 +36,11 @@ export function validateResult(response){
  if(result.missing.some(s=>typeof s!=='string'||s.length>2000))throw Error('missing');
  return {insurer:INSURERS.includes(result.insurer)?result.insurer:'Iná',summary:typeof result.summary==='string'?result.summary.slice(0,500):'',fields,missing:result.missing,requires_confirmation:true};
 }
+export async function notifyAdmin(env,subject,lines,connect){
+ if(!env.NOTIFY_TO||!env.SMTP_HOST||!env.SMTP_USER||!env.SMTP_PASS)return false;
+ try{await sendMail({host:env.SMTP_HOST,port:Number(env.SMTP_PORT||465),user:env.SMTP_USER,pass:env.SMTP_PASS,to:String(env.NOTIFY_TO).trim(),fromName:'Poistka pod Lupou – upozornenie',subject,text:[...lines,'','—','Automatické upozornenie z webu poistkapodlupou.sk'].join('\n')},connect||(await import('cloudflare:sockets')).connect);return true;}
+ catch(e){console.log('notify_failed',String(e&&e.message||e).slice(0,60));return false;}
+}
 async function reviewsRoute(request,env,path){
  const origin=request.headers.get('Origin');
  if(origin&&!ORIGINS.includes(origin))return json({error:'origin_not_allowed'},403);
@@ -51,8 +56,9 @@ async function reviewsRoute(request,env,path){
   const ip=request.headers.get('CF-Connecting-IP')||'unknown';
   const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode((env.REVIEWS_ADMIN_TOKEN||'reviews')+new Date().toISOString().slice(0,10)+'|'+ip));
   const client=Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('').slice(0,32);
-  const r=await call({action:'submit',review,client});
-  return json(await r.json(),r.status);
+  const r=await call({action:'submit',review,client});const d=await r.json();
+  if(r.status===201)await notifyAdmin(env,`Nová recenzia na schválenie – ${review.name}`,[`Na webe čaká nová recenzia na schválenie.`,``,`Meno: ${review.name}${review.city?' · '+review.city:''}`,`Oblasť: ${review.area}`,``,review.text,``,`Schváliť alebo zamietnuť: https://poistkapodlupou.sk/recenzie-sprava/`]);
+  return json(d,r.status);
  }
  if(path==='/admin/reviews'){
   if(!env.REVIEWS_ADMIN_TOKEN||env.REVIEWS_ADMIN_TOKEN.length<32)return json({error:'admin_not_configured'},503);
@@ -373,6 +379,7 @@ export async function suggestRoute(request,env,fetchImpl=fetch){
  if(twin){await drop();return json({result:'duplicate'});}
  const entry={id:crypto.randomUUID(),fileId:f.id,sha256,size:file.size,uploaded:new Date().toISOString(),fileName:'návrh z auditu',status:'pending',source:'audit',suggestedBy:sess.email,...meta};
  await call({action:'cond_put',review:entry});
+ await notifyAdmin(env,`Nové podmienky na schválenie – ${meta.insurer}`,[`Klient poslal z auditu poistné podmienky do knižnice.`,``,`Poisťovňa: ${meta.insurer}`,`Produkt: ${meta.type}`,`Názov: ${meta.title}`,`Označenie: ${meta.code||'-'}`,`Účinné od: ${meta.validFrom||'-'}`,`Veľkosť: ${Math.round(file.size/1024)} kB`,``,`Schváliť alebo zamietnuť: https://poistkapodlupou.sk/podmienky-sprava/`]);
  return json({result:'pending'},201);
 }
 async function handle(request,env){

@@ -55,3 +55,12 @@ test('rejected review is deleted and daily limit applies', async () => {
 test('foreign origin cannot submit', async () => {
   assert.equal((await worker.fetch(post('/reviews', good, { Origin: 'https://bad.test' }), env())).status, 403);
 });
+
+import { notifyAdmin } from '../cloudflare/worker.mjs';
+test('admin notification is skipped without NOTIFY_TO and sent when configured', async () => {
+  assert.equal(await notifyAdmin({ SMTP_HOST: 'h', SMTP_USER: 'a@b.sk', SMTP_PASS: 'p' }, 's', ['x']), false);
+  const log = []; const responses = ['220 hi', '250-mx\r\n250 AUTH PLAIN', '235 ok', '250 ok', '250 ok', '354 go', '250 queued', '221 bye']; let n = 0;
+  const connect = () => ({ writable: new WritableStream({ write(c) { log.push(new TextDecoder().decode(c)); } }), readable: { getReader: () => ({ read: async () => n >= responses.length ? { done: true } : { value: new TextEncoder().encode(responses[n++] + '\r\n'), done: false } }) }, close: async () => {} });
+  assert.equal(await notifyAdmin({ NOTIFY_TO: 'owner@example.sk', SMTP_HOST: 'h', SMTP_USER: 'ahoj@poistkapodlupou.sk', SMTP_PASS: 'p' }, 'Nová recenzia', ['text'], connect), true);
+  assert.match(log.join(''), /RCPT TO:<owner@example\.sk>/);
+});
