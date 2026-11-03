@@ -67,5 +67,5 @@ test('audit summary is attached and changes subject', async () => {
 
 test('life questionnaire goes to Martin with its own subject', async () => {
   const log = []; const r = await contactRoute(req({ ...good, topic: 'Dotazník životného poistenia', audit: 'Osobné údaje\n- Meno: Ján' }), env(), fakeSmtp(log));
-  assert.equal(r.status, 200); assert.match(log.join(''), /RCPT TO:<dominik@poistkapodlupou\.sk>/);
+  assert.equal(r.status, 200); assert.match(log.join(''), /RCPT TO:<curillova@poistkapodlupou\.sk>/);
 });

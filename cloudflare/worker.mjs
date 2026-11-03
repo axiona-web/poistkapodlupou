@@ -99,7 +99,7 @@ export async function contactRoute(request,env,connect){
  const store=env.REVIEWS.get(env.REVIEWS.idFromName('reviews'));
  const rate=await store.fetch('https://internal/reviews',{method:'POST',body:JSON.stringify({action:'contact_rate',client})});
  if(!rate.ok)return json({error:'rate_limited'},429);
- const to=['Úver alebo hypotéka','Dotazník životného poistenia'].includes(m.topic)?(env.CONTACT_FINANCE_TO||'dominik@poistkapodlupou.sk'):(env.CONTACT_TO||'ahoj@poistkapodlupou.sk');
+ const to=m.topic==='Úver alebo hypotéka'?(env.CONTACT_FINANCE_TO||'dominik@poistkapodlupou.sk'):m.topic==='Dotazník životného poistenia'?(env.CONTACT_LIFE_TO||'curillova@poistkapodlupou.sk'):(env.CONTACT_TO||'ahoj@poistkapodlupou.sk');
  const text=[`Nová správa z webu poistkapodlupou.sk`,``,`Meno: ${m.name}`,`E-mail: ${m.email}`,`Telefón: ${m.phone||'-'}`,`Téma: ${m.topic}`,``,`Správa:`,m.message,...(m.audit?[``,m.topic==='Dotazník životného poistenia'?`=== ODPOVEDE Z DOTAZNÍKA ===`:`=== VÝSLEDOK AUDITU Z WEBU ===`,m.audit]:[]),``,`---`,`Odpovedzte priamo na tento e-mail, odpoveď pôjde odosielateľovi.`].join('\n');
  try{await sendMail({host:env.SMTP_HOST,port:Number(env.SMTP_PORT||465),user:env.SMTP_USER,pass:env.SMTP_PASS,to,replyTo:m.email,fromName:'Poistka pod Lupou – web',subject:m.topic==='Dotazník životného poistenia'?`Dotazník životného poistenia – ${m.name}`:m.audit?`Audit poistky – ${m.name}`:`Web: ${m.topic} – ${m.name}`,text},connect||(await import('cloudflare:sockets')).connect);}
  catch(e){const step=String(e&&e.message||e).replace(/[^a-z0-9_ :.-]/gi,'').slice(0,60);console.log('contact_send_failed',step);return json({error:'send_failed',step},502);}
