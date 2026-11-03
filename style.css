@@ -160,3 +160,4 @@ button.product-tile{width:100%;padding:0;font:inherit;text-align:left;color:inhe
 
 .partner-note,.form-privacy,.chat-note,.topic-hint,.note,.filter-count,.journal-copy p,.embed-note,.footer-legal p,.source-note,.ask-note,.review-verify,.verify-terms,.page-pick small,.ask-cond-note,.contact-note p,.legal-updated,.about-legal,.admin-meta,#chat small{font-size:12px!important}.tile-copy p,.tile-copy .tile-desc{font-size:12px}
 #life-progress{white-space:nowrap}.life-contact{margin-top:18px;padding-top:18px;border-top:1px solid var(--line)}.life-contact .btn{margin-top:4px}#life-result{font-size:13px;margin-top:12px}#life-result.ok{color:#2f6a42;font-weight:700}#life-result.err{color:#a3402f;font-weight:700}#life-result a{text-decoration:underline}[data-theme=dark] #life-result.ok{color:#b9d6ad}[data-theme=dark] #life-result.err{color:#f0a594}
+.quick-heading>span,.trust-strip span,.advice-card b,.advice-card>b,.footer-bottom,.tile-copy>span{font-size:12px!important}
