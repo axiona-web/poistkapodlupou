@@ -52,16 +52,48 @@ let lastSent=null;
 function reportRows(){return sections.map(section=>({title:section.short,fields:section.fields.filter(f=>visible(f)).map(f=>({label:f.label.replace(' *',''),value:Array.isArray(answers[f.id])?(answers[f.id].join('; ')||'Neuvedené'):(answers[f.id]||'Neuvedené')}))}));}
 async function makePdf(){
  const {PDFDocument,rgb}=PDFLib;const doc=await PDFDocument.create();doc.registerFontkit(fontkit);
- const resp=await fetch('./fonts/DejaVuSans.ttf');if(!resp.ok)throw Error('Font sa nepodarilo načítať.');
- const font=await doc.embedFont(await resp.arrayBuffer(),{subset:true});doc.setTitle('Dotazník pre klienta – životné poistenie');doc.setAuthor('Poistka pod Lupou');
- const W=595.28,H=841.89,M=44;let page,y;const ink=rgb(.08,.18,.22),green=rgb(.08,.39,.32),muted=rgb(.36,.42,.42);
- const newPage=()=>{page=doc.addPage([W,H]);y=H-M;};newPage();
- function line(text,size=10,color=ink){if(y<M+30)newPage();page.drawText(text,{x:M,y,size,font,color});y-=size*1.5;}
- function paragraph(text,size=10,color=ink){for(const part of String(text).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'').split('\n')){let current='';for(const word of part.split(/\s+/)){if(!word)continue;for(const char of (current?' ':'')+word){if(font.widthOfTextAtSize(current+char,size)>W-2*M){line(current,size,color);current=char===' '?'':char;}else current+=char;}}line(current,size,color);}}
- paragraph('DOTAZNÍK PRE KLIENTA',17,green);paragraph('ŽIVOTNÉ POISTENIE',13);paragraph('Vyplnené: '+new Date().toLocaleString('sk-SK'),9,muted);paragraph('Podklady na individuálny návrh. Nejde o poistnú zmluvu ani záväznú ponuku.',9,muted);y-=12;
- for(const section of reportRows()){if(y<M+90)newPage();paragraph(section.title.toUpperCase(),12,green);y-=3;for(const f of section.fields){paragraph(f.label,9,muted);paragraph(f.value,11);y-=6;}y-=10;}
- paragraph('Tento orientačný dotazník nenahrádza zdravotný dotazník konkrétnej poisťovne.',9,muted);
- const pages=doc.getPages();pages.forEach((p,i)=>p.drawText((i+1)+' / '+pages.length,{x:W-M-35,y:23,size:9,font,color:muted}));return doc.save();
+ const [r1,r2]=await Promise.all([fetch('./fonts/DejaVuSans.ttf'),fetch('./fonts/DejaVuSans-Bold.ttf')]);if(!r1.ok||!r2.ok)throw Error('Font sa nepodarilo načítať.');
+ const font=await doc.embedFont(await r1.arrayBuffer(),{subset:true}),bold=await doc.embedFont(await r2.arrayBuffer(),{subset:true});
+ doc.setTitle('Dotazník k životnému poisteniu');doc.setAuthor('Poistka pod Lupou');doc.setCreator('poistkapodlupou.sk');
+ const W=595.28,H=841.89,M=46,FOOT=58;const navy=rgb(.078,.176,.224),green=rgb(.082,.408,.341),muted=rgb(.38,.44,.43),line=rgb(.86,.89,.875),zebra=rgb(.961,.969,.953),white=rgb(1,1,1),mint=rgb(.80,.91,.87);
+ const clean=t=>String(t??'').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'');
+ function wrap(text,f,size,width){const out=[];for(const part of clean(text).split('\n')){let cur='';for(const word of part.split(/\s+/).filter(Boolean)){const t=cur?cur+' '+word:word;if(f.widthOfTextAtSize(t,size)<=width){cur=t;continue;}if(cur)out.push(cur);cur='';let w=word;while(f.widthOfTextAtSize(w,size)>width){let k=w.length;while(k>1&&f.widthOfTextAtSize(w.slice(0,k),size)>width)k--;out.push(w.slice(0,k));w=w.slice(k);}cur=w;}out.push(cur);}return out;}
+ const name=clean(answers.name)||'Klient',email=($('sendEmail')&&$('sendEmail').value.trim())||'',phone=($('sendPhone')&&$('sendPhone').value.trim())||'';
+ const now=new Date(),when=now.toLocaleDateString('sk-SK')+' o '+now.toLocaleTimeString('sk-SK',{hour:'2-digit',minute:'2-digit'});
+ let page,y;
+ function newPage(first){page=doc.addPage([W,H]);
+  if(first){page.drawRectangle({x:0,y:H-118,width:W,height:118,color:navy});page.drawRectangle({x:0,y:H-122,width:W,height:4,color:green});
+   page.drawText('✓',{x:M,y:H-46,size:13,font:bold,color:mint});page.drawText('POISTKA POD LUPOU',{x:M+16,y:H-45,size:9,font:bold,color:mint});
+   page.drawText('Dotazník k životnému poisteniu',{x:M,y:H-78,size:21,font:bold,color:white});
+   page.drawText('Podklady na individuálny návrh · vyplnené '+when,{x:M,y:H-98,size:9.5,font,color:mint});y=H-150;}
+  else{page.drawText('Dotazník k životnému poisteniu · '+name,{x:M,y:H-34,size:8.5,font,color:muted});page.drawLine({start:{x:M,y:H-42},end:{x:W-M,y:H-42},thickness:.6,color:line});y=H-66;}}
+ newPage(true);
+ // client card
+ const contact=[email,phone].filter(Boolean).join('   ·   ')||'Kontakt neuvedený';
+ page.drawRectangle({x:M,y:y-58,width:W-2*M,height:58,color:zebra,borderColor:line,borderWidth:.8});page.drawRectangle({x:M,y:y-58,width:4,height:58,color:green});
+ page.drawText('KLIENT',{x:M+18,y:y-17,size:7.5,font:bold,color:muted});page.drawText(name,{x:M+18,y:y-35,size:15,font:bold,color:navy});page.drawText(contact,{x:M+18,y:y-50,size:9,font,color:muted});y-=84;
+ const LX=M+12,LW=205,VX=M+232,VW=W-M-12-VX,LS=8.6,VS=10;
+ const sectionsData=reportRows();
+ sectionsData.forEach((section,si)=>{
+  const rows=section.fields.map(f=>{const empty=!f.value||f.value==='Neuvedené';const val=/^\d{4}-\d{2}-\d{2}$/.test(f.value)?f.value.split('-').reverse().map(Number).join('. '):f.value;const ll=wrap(f.label,font,LS,LW),vl=wrap(empty?'—':val,empty?font:bold,VS,VW);return {ll,vl,empty,h:Math.max(ll.length*LS*1.35,vl.length*VS*1.35)+14};});
+  const firstH=rows.length?rows[0].h:0;
+  if(y-34-firstH<FOOT)newPage(false);
+  page.drawCircle({x:M+9,y:y-6,size:9,color:green});const num=String(si+1);page.drawText(num,{x:M+9-bold.widthOfTextAtSize(num,9)/2,y:y-9.2,size:9,font:bold,color:white});
+  page.drawText(section.title,{x:M+26,y:y-10.5,size:12.5,font:bold,color:navy});y-=24;
+  rows.forEach((r,ri)=>{if(y-r.h<FOOT){newPage(false);page.drawText(section.title+' (pokračovanie)',{x:M,y:y-8,size:9,font:bold,color:muted});y-=20;}
+   if(ri%2===0)page.drawRectangle({x:M,y:y-r.h,width:W-2*M,height:r.h,color:zebra});
+   r.ll.forEach((t,k)=>page.drawText(t,{x:LX,y:y-12-k*LS*1.35-1,size:LS,font,color:muted}));
+   r.vl.forEach((t,k)=>page.drawText(t,{x:VX,y:y-12-k*VS*1.35-1.5,size:VS,font:r.empty?font:bold,color:r.empty?muted:navy}));
+   y-=r.h;page.drawLine({start:{x:M,y},end:{x:W-M,y},thickness:.5,color:line});});
+  y-=22;});
+ const note=wrap('Tento orientačný dotazník slúži ako podklad na prípravu návrhu. Nie je poistnou zmluvou ani záväznou ponukou a nenahrádza zdravotný dotazník konkrétnej poisťovne.',font,8.5,W-2*M-28);
+ const nh=note.length*8.5*1.4+18;if(y-nh<FOOT)newPage(false);
+ page.drawRectangle({x:M,y:y-nh,width:W-2*M,height:nh,borderColor:line,borderWidth:.8});note.forEach((t,k)=>page.drawText(t,{x:M+14,y:y-15-k*8.5*1.4,size:8.5,font,color:muted}));
+ const pages=doc.getPages();pages.forEach((p,i)=>{p.drawLine({start:{x:M,y:40},end:{x:W-M,y:40},thickness:.6,color:line});
+  p.drawText('Poistka pod Lupou · poistkapodlupou.sk',{x:M,y:26,size:8,font:bold,color:navy});
+  const c='Dôverné – obsahuje osobné a zdravotné údaje';p.drawText(c,{x:(W-font.widthOfTextAtSize(c,8))/2+30,y:26,size:8,font,color:muted});
+  const n=(i+1)+' / '+pages.length;p.drawText(n,{x:W-M-font.widthOfTextAtSize(n,8),y:26,size:8,font,color:muted});});
+ return doc.save();
 }
 $('downloadPdf').onclick=async()=>{const button=$('downloadPdf');button.disabled=true;button.textContent='Pripravujem PDF…';try{const bytes=await makePdf();const url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}));const a=document.createElement('a');a.href=url;a.download='dotaznik-zivotne-poistenie.pdf';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);$('status').textContent='PDF je pripravené na stiahnutie. Stiahnutie neodosiela odpovede e-mailom.';}catch(e){$('status').textContent='PDF sa nepodarilo vytvoriť. Skúste stiahnutie zopakovať. Vaše odpovede zostali vo formulári.';}finally{button.disabled=false;button.textContent='Stiahnuť PDF';}};
 $('send').onclick=async()=>{const email=$('sendEmail').value.trim();if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){$('status').textContent='Vyplňte e-mail, na ktorý vám pošleme návrh.';$('sendEmail').focus();return;}if(!$('sendConsent').checked){$('status').textContent='Na odoslanie potvrďte výslovný súhlas so spracovaním a doručením údajov. PDF si môžete stiahnuť bez súhlasu.';$('sendConsent').focus();return;}if(lastSent===JSON.stringify(answers)){return;}const button=$('send');button.disabled=true;button.textContent='Odosielam…';$('status').textContent='Odosielam dotazník…';const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),30000);
