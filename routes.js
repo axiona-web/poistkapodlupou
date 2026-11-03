@@ -19,5 +19,6 @@ const ROUTE_META = {
   "instagram": ["Instagram | Poistka pod Lupou", "Praktické tipy k poisteniu na Instagrame pripravujeme."],
   "recenzie-sprava": ["Správa recenzií | Poistka pod Lupou", "", "noindex"],
   "podmienky-sprava": ["Knižnica podmienok | Poistka pod Lupou", "", "noindex"],
+  "pouzitie-sprava": ["Prehľad použitia | Poistka pod Lupou", "", "noindex"],
   "audit-pilot": ["Audit – test | Poistka pod Lupou", "", "noindex"]
 };
