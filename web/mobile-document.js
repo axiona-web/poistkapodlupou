@@ -2,7 +2,7 @@ async function prepareAuditFile(file) {
   if (!file || !file.size) throw Error('Vyberte dokument alebo odfoťte jednu stranu zmluvy.');
   const limit = 750 * 1024;
   if (file.type === 'application/pdf' || /\.pdf$/i.test(file.name)) {
-    if (file.size > limit) throw Error('PDF je príliš veľké. Vyberte výrez do 750 KiB alebo odfoťte jednu stranu.');
+    if (file.size > 10 * 1024 * 1024) throw Error('PDF môže mať najviac 10 MB. Uložte prosím iba strany so zmluvou, bez príloh.');
     return file.slice(0, file.size, 'application/pdf');
   }
   if (file.size > 25 * 1024 * 1024) throw Error('Fotografia môže mať najviac 25 MB.');
