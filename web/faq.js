@@ -1,6 +1,6 @@
 /* Časté otázky. Read also by scripts/build-routes.py for FAQPage structured data – keep FAQ_ITEMS valid JSON. */
 const FAQ_ITEMS = [
- ["Koľko stojí konzultácia?", "Nič. Konzultácia, porovnanie ponúk aj návrh poistenia sú pre vás bezplatné a nezáväzné. Za sprostredkovanie nás odmeňuje poisťovňa formou provízie, vy nám nič neplatíte."],
+ ["Koľko stojí konzultácia?", "Nič. Konzultácia, porovnanie ponúk aj návrh riešenia sú pre vás bezplatné a nezáväzné, pri poistení aj pri hypotéke, úvere, sporení či dôchodku. Za sprostredkovanie nás odmeňuje poisťovňa alebo banka formou provízie, vy nám nič neplatíte."],
  ["Je kontrola zmluvy cez web naozaj zadarmo?", "Áno. <a href=\"/audit\">Audit poistky</a> je bezplatný a k ničomu vás nezaväzuje. Na ochranu pred zneužitím vás požiadame iba o overenie e-mailu kódom."],
  ["Ako funguje kontrola zmluvy s pomocou AI?", "Nahráte zmluvu ako PDF alebo fotku. Umelá inteligencia z nej prečíta hlavné údaje a porovná ich s poistnými podmienkami príslušnej poisťovne. Dostanete prehľad krytia, limitov, spoluúčasti a výluk a môžete sa pýtať na detaily. Výsledok je orientačný. Ak chcete istotu, pošlite ho jedným klikom Alexandre na posúdenie."],
  ["Čo sa stane s mojou zmluvou po nahratí?", "Dokument neukladáme. Na prečítanie sa odošle službe Anthropic, ktorá vráti rozpoznané údaje do vášho prehliadača. Ak prehľad sami neodošlete, zostáva iba vo vašej otvorenej stránke. Podrobnosti nájdete v <a href=\"/sukromie\">ochrane osobných údajov</a>."],
