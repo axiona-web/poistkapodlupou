@@ -16,6 +16,7 @@ const ROUTE_META = {
   "sukromie": ["Ochrana osobných údajov | Poistka pod Lupou", "Kto spracúva vaše údaje, na aký účel, ako dlho a aké máte práva."],
   "cookies": ["Cookies a ukladanie v prehliadači | Poistka pod Lupou", "Nepoužívame reklamné ani analytické cookies. Prehľad toho, čo web ukladá a ako zmeniť súhlas."],
   "pravne": ["Právne informácie | Poistka pod Lupou", "Informácie o finančných agentoch, registrácii v NBS a dohľade nad finančným sprostredkovaním."],
+  "admin": ["Správa webu | Poistka pod Lupou", "", "noindex"],
   "recenzie-sprava": ["Správa recenzií | Poistka pod Lupou", "", "noindex"],
   "podmienky-sprava": ["Knižnica podmienok | Poistka pod Lupou", "", "noindex"],
   "pouzitie-sprava": ["Prehľad použitia | Poistka pod Lupou", "", "noindex"],
