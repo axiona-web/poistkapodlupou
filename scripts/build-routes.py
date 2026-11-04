@@ -61,5 +61,5 @@ for route, info in meta.items():
 urls = [r for r, i in meta.items() if not (len(i) > 2 and 'noindex' in i[2])]
 (WEB / 'sitemap.xml').write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
     ''.join(f"  <url><loc>{SITE}/{r + '/' if r else ''}</loc></url>\n" for r in urls) + '</urlset>\n', encoding='utf-8')
-(WEB / 'robots.txt').write_text(f'User-agent: *\nAllow: /\nDisallow: /recenzie-sprava/\nDisallow: /podmienky-sprava/\nDisallow: /pouzitie-sprava/\nDisallow: /audit-pilot/\nDisallow: /formular/\n\nSitemap: {SITE}/sitemap.xml\n', encoding='utf-8')
+(WEB / 'robots.txt').write_text(f'User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /recenzie-sprava/\nDisallow: /podmienky-sprava/\nDisallow: /pouzitie-sprava/\nDisallow: /audit-pilot/\nDisallow: /formular/\n\nSitemap: {SITE}/sitemap.xml\n', encoding='utf-8')
 print(f'{len(meta)} addresses, {len(urls)} in sitemap')

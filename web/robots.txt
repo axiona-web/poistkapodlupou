@@ -1,5 +1,6 @@
 User-agent: *
 Allow: /
+Disallow: /admin/
 Disallow: /recenzie-sprava/
 Disallow: /podmienky-sprava/
 Disallow: /pouzitie-sprava/
