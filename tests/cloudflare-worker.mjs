@@ -24,3 +24,7 @@ test('sends a sample to the fixed Anthropic endpoint using Workers-compatible re
  assert.equal(upstream.mock.callCount(), 1);
  assert.equal((await response.json()).requires_confirmation, true);
 });
+test('document type from the document is returned and validated',()=>{
+ const mk=dt=>validateResult({stop_reason:'end_turn',content:[{type:'text',text:JSON.stringify({insurer:'Allianz',documentType:dt,summary:'',fields:[],missing:[]})}]});
+ assert.equal(mk('pzp').documentType,'pzp');assert.equal(mk('ine').documentType,'ine');assert.equal(mk('hack').documentType,null);
+});
