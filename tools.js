@@ -120,6 +120,7 @@ function bindClaim() {
    </div>
    <section class="tool-card report"><h3><span>✎</span> Návrh hlásenia škody</h3><p class="note">Doplňte údaje v [zátvorkách] a pošlite poisťovni cez jej formulár, e-mail alebo telefonicky.</p><textarea rows="8">${tEsc(r.report)}</textarea><button class="btn secondary" type="button" id="copy-report">Kopírovať text</button></section>
    ${r.sources.length ? `<p class="ask-src">Zdroje: ${r.sources.map(tEsc).join(' · ')}</p>` : ''}
+   <p class="result-tools">${printBtn()}</p>
    ${ho.html}
    <button class="audit-back" type="button" id="claim-again">← Riešiť inú udalosť</button></div>`;
   ho.bind(root);
@@ -174,6 +175,7 @@ function bindCompare() {
    <div class="compare-table" role="table" aria-label="Porovnanie zmlúv"><div class="ct-row ct-head" role="row"><span role="columnheader">Téma</span><span role="columnheader">Súčasná${A.insurer && A.insurer !== 'Iná' ? ' · ' + tEsc(A.insurer) : ''}</span><span role="columnheader">Ponuka${B.insurer && B.insurer !== 'Iná' ? ' · ' + tEsc(B.insurer) : ''}</span><span role="columnheader">Rozdiel</span></div>${r.rows.map(x => { const [l, c] = DIFF_LABEL[x.difference] || DIFF_LABEL.nejasne; return `<div class="ct-row" role="row"><b role="cell">${tEsc(x.topic)}</b><span role="cell" data-l="Súčasná">${tEsc(x.current)}</span><span role="cell" data-l="Ponuka">${tEsc(x.offer)}</span><span role="cell"><i class="diff ${c}">${l}</i></span></div>`; }).join('')}</div>
    <div class="tool-cards"><section class="tool-card"><h3><span>+</span> Prechodom by ste získali</h3>${tList(r.gains)}</section><section class="tool-card"><h3><span>−</span> Prechodom by ste stratili</h3>${tList(r.losses)}</section><section class="tool-card wide"><h3><span>?</span> Pred rozhodnutím overte</h3>${tList(r.check)}</section></div>
    <details class="ov-details"><summary>Údaje prečítané zo súčasnej zmluvy (${A.fields.length})</summary>${fieldsTable(A)}</details><details class="ov-details"><summary>Údaje prečítané z ponuky (${B.fields.length})</summary>${fieldsTable(B)}</details>
+   <p class="result-tools">${printBtn()}</p>
    ${ho.html}<button class="audit-back" type="button" id="compare-again">← Porovnať iné zmluvy</button></div>`;
   ho.bind(root);
   root.querySelector('#compare-again').onclick = () => { A = B = result = null; choose(); top(); };
