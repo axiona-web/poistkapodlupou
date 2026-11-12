@@ -231,3 +231,8 @@ button.product-tile{width:100%;padding:0;font:inherit;text-align:left;color:inhe
 .cond-ask-form{flex-wrap:wrap;margin-top:12px}.cond-ask-form input[name=q]{flex:1 1 220px}.cond-ask-form .btn{font-size:15px;padding:12px 22px}.cond-ask-form .tool-consent{flex-basis:100%;font-size:13px;margin:4px 0 0}.cond-ask-form .tool-consent input{flex:none;width:auto}
 
 .ov-links{font-size:14px;line-height:1.8;color:var(--muted)}.ov-links a{font-weight:700;text-decoration:underline;text-underline-offset:3px}
+/* contrast fixes (WCAG AA) */
+html:not([data-theme=dark]) .back{color:#4a6a52}.finance-nav small{color:#4a6455}.finance-nav .tool-number{color:#557259}.hs-row b.warn{background:#9a6418}html:not([data-theme=dark]) .step-card span{color:#4f6e56}
+[data-theme=dark] main .btn:not(.secondary){background:#c8dfba;color:#183748}
+.finance-nav button:not([aria-selected=true]) .tool-number{color:#4a6455}[data-theme=dark] .finance-nav button:not([aria-selected=true]) .tool-number{color:#b5ccb1}
+@media(max-width:600px){.footer-top>div{columns:2;column-gap:18px}.footer-top>div a{break-inside:avoid}}
