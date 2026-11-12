@@ -5,7 +5,7 @@ const AREAS = ['Poistenie auta','Dom a domácnosť','Cestovné poistenie','Živo
 export const RATE_LIMITS = { ask: { perClient: 10, total: 50 }, chat: { perClient: 20, total: 300 } };
 const LIMITS = { name: 40, city: 40, email: 254, text: 600, perClientPerDay: 3, maxPending: 50 };
 
-export const VERIFY_LIMITS = { codesPerEmail: 3, codesPerClient: 6, codesTotal: 200, attempts: 5, codeMinutes: 15, sessionHours: 24, extractPerEmail: 2, askPerEmail: 10, suggestPerEmail: 1, suggestTotal: 20, usageDays: 90 };
+export const VERIFY_LIMITS = { codesPerEmail: 3, codesPerClient: 6, codesTotal: 200, attempts: 5, codeMinutes: 15, sessionHours: 24, extractPerEmail: 4, askPerEmail: 10, suggestPerEmail: 1, suggestTotal: 20, usageDays: 90 };
 const sha = async text => Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))), b => b.toString(16).padStart(2, '0')).join('');
 const isBlocked = (blocks, email) => Boolean(blocks[email] || blocks['@' + email.split('@')[1]]);
 const clean = value => String(value ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim();
