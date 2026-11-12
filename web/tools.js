@@ -212,4 +212,37 @@ function bindConditionsAsk() {
   }
  });
 }
-function bindTools() { bindClaim(); bindCompare(); bindConditionsAsk(); }
+
+
+/* ---------- 4. Sum insured calculator (no AI, runs in the browser) ---------- */
+const HOME_ITEMS = [['furniture', 'Nábytok a bytové doplnky'], ['kitchen', 'Kuchyňa a spotrebiče'], ['electronics', 'Elektronika (TV, počítače, telefóny)'], ['clothes', 'Oblečenie a obuv'], ['sport', 'Športové vybavenie a bicykle'], ['valuables', 'Šperky, hodinky a cennosti'], ['other', 'Ostatné (knihy, náradie, hračky…)']];
+function sumPage() { return `<div class="page-shell wrap tool-page">${toolIntro('Kalkulačka poistnej sumy', 'Nie ste<br><em>podpoistení?</em>', 'Najčastejšia chyba pri poistení bývania je príliš nízka poistná suma. Pri škode vám poisťovňa potom vyplatí len časť. Za dve minúty si spočítate, na koľko by mal byť váš domov poistený. Počíta sa iba vo vašom prehliadači.')}<div class="sum-grid">
+ <form class="contact-form sum-form" id="sum-form" autocomplete="off">
+  <fieldset class="sum-tabs"><legend>Čo počítate?</legend><label><input type="radio" name="what" value="building" checked><span>Nehnuteľnosť (stavba)</span></label><label><input type="radio" name="what" value="contents"><span>Domácnosť (veci)</span></label></fieldset>
+  <div data-part="building"><div class="form-row"><label>Typ<select name="kind"><option value="flat">Byt</option><option value="house">Rodinný dom</option></select></label><label>Podlahová plocha (m²)<input name="area" type="number" inputmode="numeric" min="10" max="2000" value="70"></label></div>
+   <label>Náklady na výstavbu (€/m²)<input name="rate" type="number" inputmode="numeric" min="300" max="6000" value="1600"></label><p class="note">Koľko by stálo postaviť rovnakú stavbu znova, nie trhová cena bytu. Orientačne 1 300 – 2 200 € za m² podľa štandardu; presnú hodnotu môže uviesť stavebný rozpočet alebo znalecký posudok.</p>
+   <label>Garáž, plot a vedľajšie stavby (€) <span class="optional">(nepovinné)</span><input name="extra" type="number" inputmode="numeric" min="0" max="2000000" value="0"></label></div>
+  <div data-part="contents" hidden><p class="note">Odhadnite, koľko by stálo kúpiť veci znova ako nové. Prejdite si v duchu miestnosť po miestnosti.</p>${HOME_ITEMS.map(([k, l]) => `<label>${l} (€)<input name="${k}" type="number" inputmode="numeric" min="0" max="1000000" value="0"></label>`).join('')}</div>
+  <label class="sum-current">Poistná suma vo vašej zmluve (€) <span class="optional">(ak ju poznáte)</span><input name="current" type="number" inputmode="numeric" min="0" max="5000000" placeholder="napríklad 80000"></label>
+ </form>
+ <aside class="sum-result" aria-live="polite"><span class="eyebrow">Odporúčaná poistná suma</span><strong id="sum-total">–</strong><p id="sum-hint"></p><div id="sum-gap"></div><div class="sum-cta"><a class="btn" href="/audit">Skontrolovať moju zmluvu <span>→</span></a><a class="text-link" href="/kontakt">Poradiť sa s Alexandrou →</a></div></aside></div>
+ <section class="reading-body sum-explain"><h2>Prečo na poistnej sume záleží</h2><p>Ak je poistná suma nižšia ako skutočná hodnota, hovoríme o podpoistení. Poisťovňa potom môže plnenie znížiť v rovnakom pomere: pri poistnej sume 60 000 € a skutočnej hodnote 100 000 € dostanete zo škody 10 000 € len približne 6 000 €. Niektoré zmluvy toto krátenie nepoužívajú, napríklad pri poistení na prvé riziko alebo keď sa ho poisťovňa vzdá. Ako to je vo vašej zmluve, zistíte v poistných podmienkach.</p><h2>Nehnuteľnosť alebo domácnosť?</h2><p>Nehnuteľnosť sú steny, strecha, podlahy a pevne zabudované veci. Domácnosť sú hnuteľné veci, ktoré by ste pri sťahovaní zobrali so sebou. Každá má vlastnú poistnú sumu.</p><p>Hodnoty si raz za pár rokov preverte, najmä po rekonštrukcii alebo väčších nákupoch.</p></section></div>`; }
+function bindSum() {
+ const f = document.querySelector('#sum-form'); if (!f) return;
+ const eur = n => Math.round(n).toLocaleString('sk-SK') + ' €', num = n => Math.max(0, Number(f[n]?.value) || 0);
+ const calc = () => {
+  const what = f.what.value; f.querySelectorAll('[data-part]').forEach(p => p.hidden = p.dataset.part !== what);
+  const total = what === 'building' ? num('area') * num('rate') + num('extra') : HOME_ITEMS.reduce((a, [k]) => a + num(k), 0);
+  document.querySelector('#sum-total').textContent = total ? eur(Math.ceil(total / 1000) * 1000) : '–';
+  document.querySelector('#sum-hint').textContent = what === 'building' ? 'Cena znovupostavenia stavby. Pozemok sa nepoisťuje.' : 'Hodnota vecí v novom stave.';
+  const cur = num('current'), gap = document.querySelector('#sum-gap');
+  if (!cur || !total) { gap.innerHTML = ''; return; }
+  const ratio = cur / total;
+  gap.innerHTML = ratio > 1.25 ? `<p class="sum-low"><b>Poistná suma ${eur(cur)} je výrazne vyššia ako odhad.</b> Poisťovňa vyplatí najviac skutočnú škodu, takže môžete platiť zbytočne vysoké poistné. Skontrolujte, či odhad zahŕňa všetko.</p>` : ratio >= 0.97 ? `<p class="sum-ok">✓ Vaša poistná suma ${eur(cur)} zodpovedá odhadu.</p>` : `<p class="sum-low"><b>Možné podpoistenie: ${Math.round((1 - ratio) * 100)} %.</b> Pri škode 10 000 € by ste mohli dostať približne ${eur(10000 * ratio)}.</p>`;
+ };
+ f.oninput = calc; f.onchange = calc;
+ f.kind.onchange = () => { f.rate.value = f.kind.value === 'house' ? 1700 : 1600; calc(); };
+ calc();
+}
+
+function bindTools() { bindClaim(); bindCompare(); bindConditionsAsk(); bindSum(); }

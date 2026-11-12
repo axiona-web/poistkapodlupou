@@ -10,6 +10,7 @@ const ROUTE_META = {
   "poistna-udalost": ["Poistná udalosť – čo robiť, do kedy nahlásiť, návrh hlásenia | Poistka pod Lupou", "Stala sa nehoda, vytopenie či krádež? Zistite podľa zmluvy a podmienok, či je udalosť krytá, do kedy ju nahlásiť a čo si pripraviť. Zadarmo."],
   "porovnanie": ["Porovnanie poistných zmlúv – súčasná zmluva vs. nová ponuka | Poistka pod Lupou", "Nahrajte súčasnú zmluvu a novú ponuku. Prehľadne ukážeme rozdiely v krytí, limitoch, spoluúčasti a cene. Zadarmo a nezáväzne."],
   "podmienky": ["Opýtajte sa poistných podmienok – čo kryje vaša poisťovňa | Poistka pod Lupou", "Kryje PZP sklo? Platí cestovné na lyžovanie? Odpovede priamo zo všeobecných poistných podmienok slovenských poisťovní s odkazom na článok."],
+  "poistna-suma": ["Kalkulačka poistnej sumy – nehnuteľnosť a domácnosť bez podpoistenia | Poistka pod Lupou", "Spočítajte si, na koľko poistiť byt, dom a domácnosť, a zistite, či nie ste podpoistení. Zadarmo, bez registrácie, priamo v prehliadači."],
   "kontakt": ["Kontakt | Poistka pod Lupou", "Napíšte nám otázku k poisteniu, hypotéke alebo úveru. Odpovieme spravidla do jedného pracovného dňa. ahoj@poistkapodlupou.sk"],
   "zivotne": ["Životné poistenie – podklady na konzultáciu | Poistka pod Lupou", "Pripravte si podklady k životnému poisteniu: krytie, rozpočet a vaša situácia. Ponuku pripravíme na mieru."],
   "auto": ["Poistenie auta – PZP a KASKO | Poistka pod Lupou", "Prepočítajte PZP a havarijné poistenie (KASKO) a pozrite sa, čo si pri výbere skontrolovať."],
