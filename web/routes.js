@@ -1,7 +1,9 @@
 // Page titles and descriptions for every address. Also read by scripts/build-routes.py.
 const ROUTE_META = {
-  "": ["Poistka pod Lupou – poistenie, v ktorom sa vyznáte", "Preveríme vašu poistnú zmluvu, vysvetlíme výluky a limity a pripravíme ponuku na mieru. Poistenie auta, domu, cestovné aj životné. Spiš a celé Slovensko."],
+  "": ["Poistka pod Lupou – poistenie, v ktorom sa vyznáte", "Preveríme vašu poistnú zmluvu, pomôžeme pri poistnej udalosti a pripravíme ponuku na mieru. Poistenie auta, domu, cestovné aj životné. Spiš a celé Slovensko."],
   "audit": ["Audit poistky – viete, čo máte v zmluve? | Poistka pod Lupou", "Bezplatná orientačná kontrola poistnej zmluvy: PZP, KASKO, domácnosť, cestovné, zodpovednosť aj životné poistenie. Nahrajte zmluvu alebo vyplňte krátky dotazník."],
+  "nastroje": ["Nástroje k poisteniu – audit, poistná udalosť, porovnanie zmlúv | Poistka pod Lupou", "Bezplatné nástroje: audit poistky, pomocník pri poistnej udalosti, porovnanie zmlúv, otázky k poistným podmienkam a kalkulačka poistnej sumy."],
+  "poistenie": ["Nové poistenie – PZP, KASKO, dom, cestovné, zodpovednosť, životné | Poistka pod Lupou", "Prepočítajte si cenu poistenia vo viacerých poisťovniach, alebo nechajte porovnanie na nás. Auto, dom a domácnosť, cestovné, zodpovednosť aj životné poistenie."],
   "kalkulacky": ["Finančné kalkulačky – hypotéka, úver, sporenie, dôchodok | Poistka pod Lupou", "Porovnanie hypoték, refinancovanie, úverová, sporiaca a dôchodková kalkulačka. Reálne prepočty od Finportalu."],
   "rady": ["Rady a tipy k poisteniu | Poistka pod Lupou", "Krátki sprievodcovia k poisteniu auta, bývania, cestovania a práce. Čo si pozrieť v podmienkach, pred podpisom aj pri výročí zmluvy."],
   "o-nas": ["O nás – Alexandra Čurillová a Martin Dominik | Poistka pod Lupou", "Poistenie a financie zo Spiša. Ponuky na mieru, vysvetlenie výluk a podmienok a starostlivosť aj po podpise zmluvy."],

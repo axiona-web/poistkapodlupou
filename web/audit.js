@@ -64,7 +64,7 @@ function auditOverview(t,ctx){const {doc:documentData,insurer,type,answers,sums}
  html.push(`<p class="note">${documentData?'Prehľad vychádza z údajov, ktoré ste potvrdili, a z vašich odpovedí. Nejde o odporúčanie; záväzné je znenie zmluvy a podmienok.':'Prehľad vychádza len z vašich odpovedí, bez čítania dokumentu.'}</p>`);
  return {html:html.join(''),text};
 }
-function auditPage(pilot=false){return `<div class="page-shell wrap audit-entry"><a class="back" href="/">← Späť na úvod</a><div class="page-intro"><span class="eyebrow">Audit poistky</span><h1>Viete, čo máte<br><em>v zmluve?</em></h1><p>${pilot?'Súkromný test čítania zmluvy. Vyberte typ poistenia.':'Vyberte typ poistenia. Zmluvu môžete nahrať, odfotiť alebo pokračovať krátkym dotazníkom.'}</p></div><div id="audit-flow"></div></div>`;}
+function auditPage(pilot=false){return `<div class="page-shell wrap audit-entry"><a class="back" href="/nastroje">← Všetky nástroje</a><div class="page-intro"><span class="eyebrow">Audit poistky</span><h1>Viete, čo máte<br><em>v zmluve?</em></h1><p>${pilot?'Súkromný test čítania zmluvy. Vyberte typ poistenia.':'Vyberte typ poistenia. Zmluvu môžete nahrať, odfotiť alebo pokračovať krátkym dotazníkom.'}</p></div><div id="audit-flow"></div></div>`;}
 function bindAudit(pilot=false){
  const root=document.querySelector('#audit-flow');if(!root)return;
  let documentData=null;

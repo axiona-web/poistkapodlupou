@@ -49,7 +49,7 @@ function cookiesPage() {
   <h2>Čo ukladáme</h2>${legalTable(['Názov','Na čo slúži','Typ','Ako dlho'],rows)}
   <p>Obe naše položky ukladáme do lokálneho úložiska prehliadača (localStorage), nie do klasických cookies. Neodchádzajú na žiadny server a nevidíme ich.</p>
   <h2>Kalkulačky Finportalu</h2><p>Finančné kalkulačky prevádzkuje Finportal, a. s. Ak ich povolíte, prehliadač sa pri otvorení stránky Kalkulačky spojí so serverom Finportalu. Ten dostane technické údaje o pripojení vrátane IP adresy a môže používať vlastné cookies. Údaje, ktoré do kalkulačky zadáte, spracúva Finportal podľa svojich pravidiel. Ak kalkulačky nepovolíte, môžete ich otvoriť samostatným odkazom na webe Finportalu.</p>
-  <h2>Partnerské odkazy na poistenie</h2><p>Dlaždice na úvode otvárajú kalkulačky Najpoistenie v novom okne. Na tom webe platia pravidlá jeho prevádzkovateľa.</p>
+  <h2>Partnerské odkazy na poistenie</h2><p>Dlaždice na stránke <a href="/poistenie">Poistenie</a> a tlačidlá na stránkach jednotlivých druhov poistenia otvárajú kalkulačky Najpoistenie v novom okne. Na tom webe platia pravidlá jeho prevádzkovateľa.</p>
   <h2>Zmena alebo odvolanie súhlasu</h2><p>Svoju voľbu môžete kedykoľvek zmeniť. Odvolanie súhlasu nemá vplyv na zákonnosť načítania pred jeho odvolaním.</p><button class="btn" data-cookie-settings>Zmeniť nastavenia</button>
   <p class="legal-updated">Pravidlá vychádzajú z § 109 ods. 8 zákona č. 452/2021 Z. z. o elektronických komunikáciách. Účinné od ${LEGAL_UPDATED}. Súvisí: <a href="/sukromie">Ochrana osobných údajov</a>.</p>`);
 }
