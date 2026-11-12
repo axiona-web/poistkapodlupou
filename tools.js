@@ -62,7 +62,7 @@ function toolHandoff(topic, getText, lead) {
      if (!r.ok) throw 0; f.innerHTML = '<p class="tool-sent"><b>Odoslané.</b> Alexandra sa vám ozve.</p>'; } catch { st.textContent = 'Odoslanie sa nepodarilo. Napíšte na ahoj@poistkapodlupou.sk.'; b.disabled = false; } }; } };
 }
 const toolConsent = text => `<label class="check-label tool-consent"><input type="checkbox" name="consent" required><span>${text} <a href="/sukromie">Ochrana osobných údajov</a></span></label>`;
-const toolIntro = (eyebrow, h1, lead) => `<div class="page-intro"><span class="eyebrow">${eyebrow}</span><h1>${h1}</h1><p>${lead}</p></div>`;
+const toolIntro = (eyebrow, h1, lead) => `<a class="back" href="/nastroje">← Všetky nástroje</a><div class="page-intro"><span class="eyebrow">${eyebrow}</span><h1>${h1}</h1><p>${lead}</p></div>`;
 
 /* ---------- 1. Claim helper ---------- */
 function claimPage() { return `<div class="page-shell wrap tool-page">${toolIntro('Pomocník pri poistnej udalosti', 'Stalo sa niečo?<br><em>Poradíme, čo ďalej.</em>', 'Vyberte, čo sa stalo, a krátko to opíšte. Ak nahráte zmluvu, zistíme z nej a z poistných podmienok, či je udalosť krytá, do kedy ju nahlásiť a čo si pripraviť. Zadarmo.')}<div class="tool-sos" role="note"><b>Ide o ohrozenie života alebo zdravia?</b> Volajte <a href="tel:112">112</a>. Pri nehode so zranením alebo väčšou škodou aj políciu <a href="tel:158">158</a>.</div><div id="claim-flow"></div></div>`; }

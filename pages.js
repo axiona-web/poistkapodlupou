@@ -28,7 +28,7 @@ function ensureFinportalScript(){
  });return finportalScriptPromise;
 }
 function disposeFinance(){const frame=document.getElementById('finportal-iframe');if(frame?.iFrameResizer)frame.iFrameResizer.removeListeners();}
-function financePage(){return `<div class="page-shell wrap"><a class="back" href="/">← Späť na úvod</a><div class="page-intro"><span class="eyebrow">Čísla, ktoré pomáhajú plánovať</span><h1>Dajte svojim<br>plánom <em>konkrétny tvar.</em></h1><p>Hypotéka, sporenie, refinancovanie, úver aj dôchodok. Reálne kalkulačky priamo od Finportalu.</p></div>${financeIntermediaryNote()}<div class="finance-workspace"><div class="finance-nav" role="tablist" aria-label="Finančné kalkulačky">${financeTools.map(([id,title,sub],i)=>`<button role="tab" id="tab-${id}" aria-controls="finance-panel" aria-selected="${i===0}" tabindex="${i===0?0:-1}" data-finance="${id}"><span class="tool-number">0${i+1}</span><span><b>${title}</b><small>${sub}</small></span><span aria-hidden="true">→</span></button>`).join('')}</div><div id="finance-panel" role="tabpanel" tabindex="0" aria-labelledby="tab-hypoteky"></div></div><div class="page-footnote">Hľadáte prepočet poistenia? <a href="/">Vyberte si poistenie na úvode →</a></div></div>`}
+function financePage(){return `<div class="page-shell wrap"><a class="back" href="/">← Späť na úvod</a><div class="page-intro"><span class="eyebrow">Čísla, ktoré pomáhajú plánovať</span><h1>Dajte svojim<br>plánom <em>konkrétny tvar.</em></h1><p>Hypotéka, sporenie, refinancovanie, úver aj dôchodok. Reálne kalkulačky priamo od Finportalu.</p></div>${financeIntermediaryNote()}<div class="finance-workspace"><div class="finance-nav" role="tablist" aria-label="Finančné kalkulačky">${financeTools.map(([id,title,sub],i)=>`<button role="tab" id="tab-${id}" aria-controls="finance-panel" aria-selected="${i===0}" tabindex="${i===0?0:-1}" data-finance="${id}"><span class="tool-number">0${i+1}</span><span><b>${title}</b><small>${sub}</small></span><span aria-hidden="true">→</span></button>`).join('')}</div><div id="finance-panel" role="tabpanel" tabindex="0" aria-labelledby="tab-hypoteky"></div></div><div class="page-footnote">Hľadáte prepočet poistenia? <a href="/poistenie">Vyberte si druh poistenia →</a></div></div>`}
 function selectFinance(id,focus=false){
  const item=financeTools.find(t=>t[0]===id);if(!item)return;
  document.querySelectorAll('[data-finance]').forEach(b=>{const active=b.dataset.finance===id;b.setAttribute('aria-selected',String(active));b.tabIndex=active?0:-1;if(active&&focus)b.focus()});
@@ -78,7 +78,7 @@ function bindPages(){
   else fail('Správu sa teraz nepodarilo odoslať.');
  }catch{fail('Spojenie zlyhalo.');}finally{button.disabled=false;}
 };
- document.querySelectorAll('nav a').forEach(a=>{const norm=s=>s.replace(/\/+$/,'');const active=norm(a.pathname)===norm(location.pathname);if(active)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
+ document.querySelectorAll('nav a').forEach(a=>{const norm=s=>s.replace(/\/+$/,'');const here=norm(location.pathname);const active=norm(a.pathname)===here;const section=!active&&!!here&&(a.dataset.match||'').split(' ').filter(Boolean).includes(here);if(active)a.setAttribute('aria-current','page');else if(section)a.setAttribute('aria-current','true');else a.removeAttribute('aria-current')});
 }
 
 function aboutPage(){
