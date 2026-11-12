@@ -15,8 +15,10 @@ routes_src = (WEB / 'routes.js').read_text(encoding='utf-8')
 meta = json.loads(routes_src[routes_src.index('{'):routes_src.rindex('}') + 1])
 
 pages = (WEB / 'pages.js').read_text(encoding='utf-8')
+articles = {}
 for slug, _, title, desc in re.findall(r"\['([a-z-]+)','(Základy|Auto|Bývanie|Cestovanie|Práca)','([^']+)','([^']+)'", pages):
     meta[f'rady/{slug}'] = [f'{title} | Poistka pod Lupou', desc]
+    articles[f'rady/{slug}'] = (title, desc)
 
 faq_src = (WEB / 'faq.js').read_text(encoding='utf-8')
 faq_items = json.loads(faq_src[faq_src.index('['):faq_src.index('];') + 1])
@@ -37,6 +39,13 @@ def page(route, info):
     out = re.sub(r'<link rel="canonical" href="[^"]*">', f'<link rel="canonical" href="{url}">', out, count=1)
     out = re.sub(r'<meta property="og:url" content="[^"]*">', f'<meta property="og:url" content="{url}">', out, count=1)
     out = re.sub(r'<meta name="robots" content="[^"]*">', '', out)
+    if route in articles:
+        t, d = articles[route]
+        ld = json.dumps({'@context': 'https://schema.org', '@type': 'Article', 'headline': t, 'description': d, 'inLanguage': 'sk',
+                         'mainEntityOfPage': f'{SITE}/{route}/', 'image': f'{SITE}/assets/og-image.jpg',
+                         'author': {'@type': 'Organization', 'name': 'Poistka pod Lupou', 'url': SITE},
+                         'publisher': {'@type': 'Organization', 'name': 'Poistka pod Lupou', 'url': SITE}}, ensure_ascii=False).replace('</', '<\\/')
+        out = out.replace('</head>', f'<script type="application/ld+json">{ld}</script></head>', 1)
     if route == 'otazky':
         out = out.replace('</head>', f'<script type="application/ld+json">{faq_ld}</script></head>', 1)
     if robots:
