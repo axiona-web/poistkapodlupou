@@ -445,3 +445,59 @@ footer .brand .brand-bottom{color:#b6cfae}
 .person-avatar.photo{padding:4px}
 [data-theme=dark] .who-avatar.photo,[data-theme=dark] .person-avatar.photo{background:transparent;border-color:#5f7f6a}
 @media(max-width:700px){.who-avatar.photo{width:112px;height:112px;padding:4px}.person-avatar{width:80px;height:80px}}
+/* 2026-11 finance calculator menu: readable type (was 9-14px) */
+.finance-nav b{font-size:17px;line-height:1.3;letter-spacing:-.2px}
+.finance-nav small{font-size:14px;line-height:1.4;margin-top:4px}
+.finance-nav .tool-number{font-size:13px;font-weight:700}
+@media(max-width:1100px){.finance-nav b{font-size:16px}.finance-nav small{font-size:13px}}
+@media(max-width:600px){.finance-nav b{font-size:15px}.finance-nav .tool-number{font-size:12px}}
+@media(min-width:901px){.finance-workspace{grid-template-columns:350px minmax(0,1fr)}}
+@media(min-width:901px) and (max-width:1100px){.finance-workspace{grid-template-columns:310px minmax(0,1fr)}}
+#finance-panel>p{font-size:16px;line-height:1.6;max-width:52ch}
+/* 2026-11 readability pass: no reading text under 13px, labels at least 12px */
+html nav a,html nav .nav-parent{font-size:15px}
+@media(min-width:981px) and (max-width:1200px){html nav a,html nav .nav-parent{font-size:14px}html nav{gap:20px}}
+html header .menu-toggle,html header button[aria-controls]{font-size:15px}
+html .eyebrow,html .check-feature .eyebrow,html .closing .eyebrow{font-size:12px}
+html a.back{font-size:14px}
+html .footer-col b{font-size:14px}
+html .footer-col a{font-size:14px}
+html .footer-legal p,html .footer-bottom,html .footer-bottom span{font-size:13px}
+html .tile-copy h3,html .tile-copy .tile-title,html button.product-tile .tile-title{font-size:17px;letter-spacing:-.3px}
+html .tile-copy p,html .tile-copy .tile-desc,html button.product-tile .tile-desc{font-size:14px;line-height:1.45}
+html .tile-copy>span:last-child,html .tile-copy span:last-child{font-size:14px}
+html .tile-tag,html .category-tag{font-size:12px}
+html .contact-form label,html .form-row label,html form label{font-size:14px}
+html label .optional{font-size:13px}
+html fieldset legend{font-size:15px}
+html .partner-note,html .form-privacy,html .topic-hint,html .note,html .embed-note,html .source-note,html .ask-note,html .legal-updated,html .page-footnote,html .how-cta small{font-size:14px;line-height:1.55}
+html .intermediary-note p{font-size:13px}
+html .reading-steps li>span,html .how-num,html .step-card>span{font-size:13px}
+html .advice-card>span{font-size:13px}html .advice-card>b{font-size:14px}
+html .journal-filters button{font-size:14px}
+html .filter-count{font-size:14px}
+html .journal-copy p{font-size:15px;line-height:1.55}
+html .journal-copy>span{font-size:13px}
+html .person-tags li{font-size:13px}
+html .person-mail{font-size:14px}
+html th{font-size:13px}
+html .partner-note,html .form-privacy,html .topic-hint,html .note,html .filter-count,html .embed-note,html .source-note,html .review-verify,html .page-pick small,html .ask-cond-note,html .contact-note p,html .legal-updated,html .about-legal{font-size:14px!important}
+html .journal-copy p{font-size:15px!important}
+html .footer-legal p,html .footer-bottom,html .admin-meta,html .chat-note,html #chat small{font-size:13px!important}
+html .ask-note,html .verify-terms{font-size:13px!important}
+html .tile-copy>span.tile-title{font-size:17px!important}
+html .tile-copy>span.tile-desc{font-size:14px!important}
+html .tile-copy>span:last-child{font-size:14px!important}
+html .advice-card b,html .advice-card>b{font-size:14px!important}
+html .quick-heading>span,html .trust-strip span{font-size:13px!important}
+html .home-new .advice-card>span{font-size:13px}
+html #menu{font-size:15px}
+html .contact-form legend{font-size:15px}html .ask-cond legend{font-size:14px}
+html .legal-table thead th{font-size:12px}
+html .share-cond{font-size:14px}
+html .form-notice{font-size:14px}
+html .audit-step-top,html .audit-step-bottom{font-size:14px}html .audit-step-bottom>span{font-size:13px}
+html .contact-form .check-label,html .ask-cond-list .check-label{font-size:14px}
+html .topic-options span{font-size:14px;padding:8px 14px}
+html .contact-note{font-size:14px}
+html footer button{font-size:14px}
