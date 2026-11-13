@@ -181,7 +181,7 @@ function bindAudit(pilot=false){
     log.querySelectorAll('.ask-handoff').forEach(b=>b.onclick=()=>root.querySelector('#audit-send-form [name=name]').focus());}
    else if(r.status===401){saveSession(null);bubble('ai err','Overenie e-mailu vypršalo. Overte ho prosím znova.');showAskGate();}
    else if(r.status===403)bubble('ai err','Tento e-mail nemôže službu používať.');
-   else bubble('ai err',r.status===429?'Dnes ste už položili veľa otázok. Pošlite prehľad Alexandre, rada vám odpovie osobne.':'Odpoveď sa nepodarilo získať. Skúste to znova alebo pošlite prehľad Alexandre.');
+   else{const e=await r.json().catch(()=>({}));bubble('ai err',e.error==='budget'?'Pomocník má na dnes prestávku. Pošlite prehľad Alexandre, rada vám odpovie osobne.':r.status===429?'Dnes ste už položili veľa otázok. Pošlite prehľad Alexandre, rada vám odpovie osobne.':'Odpoveď sa nepodarilo získať. Skúste to znova alebo pošlite prehľad Alexandre.');}
   }catch{wait.remove();bubble('ai err','Spojenie zlyhalo. Skúste to znova.');}
   finally{btn.disabled=false;askForm.q.disabled=false;askForm.q.focus();}}
  askForm.onsubmit=e=>{e.preventDefault();const q=askForm.q.value.trim();if(q.length<3||!consentOk())return;askForm.q.value='';ask(q);};
