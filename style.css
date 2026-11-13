@@ -437,3 +437,11 @@ main:focus{outline:none}
 nav a.nav-contact[aria-current]{color:#183748}
 [data-theme=dark] nav a.nav-contact[aria-current]{color:#e5efe5}
 footer .brand .brand-bottom{color:#b6cfae}
+/* 2026-11 Alexandra's photo: home (who) and About; a thin sage ring keeps it in the palette */
+.who-avatar.photo,.person-avatar.photo{padding:5px;background:transparent;border:2px solid #b8cdb9;overflow:hidden}
+.who-avatar.photo img,.person-avatar.photo img{display:block;width:100%;height:100%;object-fit:cover;border-radius:50%}
+.who-avatar.photo{width:136px;height:136px}
+.person-avatar{width:84px;height:84px;font-size:24px}
+.person-avatar.photo{padding:4px}
+[data-theme=dark] .who-avatar.photo,[data-theme=dark] .person-avatar.photo{background:transparent;border-color:#5f7f6a}
+@media(max-width:700px){.who-avatar.photo{width:104px;height:104px;padding:4px}}
