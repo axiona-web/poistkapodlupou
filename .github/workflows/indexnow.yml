@@ -1,0 +1,40 @@
+# Tells Bing (and other IndexNow search engines) which pages changed, a few minutes after a deploy.
+# Changed pages come from scripts/lastmod.json, which scripts/prerender.cjs updates only when a
+# page's visible content changes. The key file web/2a85e5c25991923434b8fbf184d37e9d.txt proves the site is ours.
+name: IndexNow
+on:
+  push:
+    branches: [main]
+    paths: [scripts/lastmod.json]
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Wait for GitHub Pages to publish the new pages
+        run: sleep 240
+      - name: Submit changed pages
+        env:
+          BEFORE: ${{ github.event.before }}
+          KEY: 2a85e5c25991923434b8fbf184d37e9d
+        run: |
+          python3 - <<'PY'
+          import json, os, subprocess, urllib.request
+          now = json.load(open('scripts/lastmod.json'))
+          try:
+              old = json.loads(subprocess.run(['git', 'show', os.environ.get('BEFORE', '') + ':scripts/lastmod.json'], capture_output=True, text=True, check=True).stdout)
+          except Exception:
+              old = {}
+          changed = [r for r, v in now.items() if old.get(r, {}).get('hash') != v['hash']]
+          urls = ['https://poistkapodlupou.sk/' + ('' if r == '/' else r + '/') for r in changed]
+          print('changed pages:', len(urls))
+          if urls:
+              body = json.dumps({'host': 'poistkapodlupou.sk', 'key': os.environ['KEY'],
+                                 'keyLocation': 'https://poistkapodlupou.sk/' + os.environ['KEY'] + '.txt', 'urlList': urls}).encode()
+              req = urllib.request.Request('https://api.indexnow.org/indexnow', data=body, headers={'Content-Type': 'application/json; charset=utf-8'})
+              with urllib.request.urlopen(req, timeout=30) as r:
+                  print('IndexNow', r.status)
+          PY

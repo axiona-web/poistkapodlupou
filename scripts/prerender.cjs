@@ -59,6 +59,31 @@ async function capture(browser, route, options = {}) {
   return { ...result, errors };
 }
 
+/* <lastmod> in the sitemap: the day a page's visible content last changed. scripts/lastmod.json keeps a
+   fingerprint of every page (title, description, prerendered content); a page gets today's date only when
+   its fingerprint differs, so cache-busting versions and script changes do not make every page look new.
+   .github/workflows/indexnow.yml reads the same file to tell Bing which pages changed. */
+function writeLastmod(routes) {
+  const store = path.join(__dirname, 'lastmod.json');
+  const known = fs.existsSync(store) ? JSON.parse(fs.readFileSync(store, 'utf8')) : {};
+  const today = new Date().toISOString().slice(0, 10);
+  const next = {};
+  for (const route of routes) {
+    const page = fs.readFileSync(path.join(WEB, route, 'index.html'), 'utf8');
+    const part = (re) => (page.match(re) || [, ''])[1];
+    const visible = [part(/<title>([\s\S]*?)<\/title>/), part(/<meta name="description" content="([^"]*)"/), part(/<main id="main"[^>]*>([\s\S]*?)<\/main>/)].join('\n');
+    const hash = require('node:crypto').createHash('sha256').update(visible).digest('hex').slice(0, 16);
+    next[route || '/'] = known[route || '/'] && known[route || '/'].hash === hash ? known[route || '/'] : { hash, date: today };
+  }
+  fs.writeFileSync(store, JSON.stringify(next, null, 1) + '\n', 'utf8');
+  const file = path.join(WEB, 'sitemap.xml');
+  const xml = fs.readFileSync(file, 'utf8').replace(/<url><loc>([^<]+)<\/loc>(?:<lastmod>[^<]*<\/lastmod>)?<\/url>/g, (all, loc) => {
+    const route = loc.replace(ORIGIN, '').replace(/^\/+|\/+$/g, '') || '/';
+    return next[route] ? `<url><loc>${loc}</loc><lastmod>${next[route].date}</lastmod></url>` : all;
+  });
+  fs.writeFileSync(file, xml, 'utf8');
+}
+
 (async () => {
   const check = process.argv.includes('--check');
   const sitemap = fs.readFileSync(path.join(WEB, 'sitemap.xml'), 'utf8');
@@ -83,5 +108,6 @@ async function capture(browser, route, options = {}) {
   }
   await browser.close();
   console.log(`prerendered ${done} of ${routes.length} pages, ${Math.round(bytes / 1024)} kB of content`);
+  if (!problems.length) writeLastmod(routes);
   if (problems.length) { console.error(problems.join('\n')); process.exit(1); }
 })().catch((e) => { console.error(e); process.exit(1); });

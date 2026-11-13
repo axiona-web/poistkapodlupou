@@ -1,0 +1,154 @@
+{
+ "/": {
+  "hash": "fbb6ac2495dc16a6",
+  "date": "2026-11-13"
+ },
+ "audit": {
+  "hash": "ed78742cc97baa2c",
+  "date": "2026-11-13"
+ },
+ "nastroje": {
+  "hash": "80f508a3ee36435d",
+  "date": "2026-11-13"
+ },
+ "poistenie": {
+  "hash": "859f404d600537a3",
+  "date": "2026-11-13"
+ },
+ "kalkulacky": {
+  "hash": "833852d3d786ff7e",
+  "date": "2026-11-13"
+ },
+ "rady": {
+  "hash": "6454dd5c18630805",
+  "date": "2026-11-13"
+ },
+ "o-nas": {
+  "hash": "5ffd4f12268d4125",
+  "date": "2026-11-13"
+ },
+ "recenzie": {
+  "hash": "b8c867cf2498d823",
+  "date": "2026-11-13"
+ },
+ "otazky": {
+  "hash": "fd40e245066f9455",
+  "date": "2026-11-13"
+ },
+ "poistna-udalost": {
+  "hash": "7e8a0b8e5833dc07",
+  "date": "2026-11-13"
+ },
+ "porovnanie": {
+  "hash": "316aa99f5744e923",
+  "date": "2026-11-13"
+ },
+ "podmienky": {
+  "hash": "99d0c707d5cc628b",
+  "date": "2026-11-13"
+ },
+ "poistna-suma": {
+  "hash": "a42eb3311b6552c6",
+  "date": "2026-11-13"
+ },
+ "kontakt": {
+  "hash": "5f6690e7fffe8da5",
+  "date": "2026-11-13"
+ },
+ "zivotne": {
+  "hash": "6a1da8af2b753c11",
+  "date": "2026-11-13"
+ },
+ "auto": {
+  "hash": "7e2d1f1c25ab3e9e",
+  "date": "2026-11-13"
+ },
+ "majetok": {
+  "hash": "b3f333e21b23c58b",
+  "date": "2026-11-13"
+ },
+ "cestovne": {
+  "hash": "a244678b14d996c5",
+  "date": "2026-11-13"
+ },
+ "zodpovednost": {
+  "hash": "2aef95f582ba2866",
+  "date": "2026-11-13"
+ },
+ "sukromie": {
+  "hash": "7e56c76ea5f66cbe",
+  "date": "2026-11-13"
+ },
+ "cookies": {
+  "hash": "270eecd58b19b29e",
+  "date": "2026-11-13"
+ },
+ "pravne": {
+  "hash": "824eb4ff12370b18",
+  "date": "2026-11-13"
+ },
+ "rady/zimne-pneumatiky-a-poistenie": {
+  "hash": "22507eb5b1089128",
+  "date": "2026-11-13"
+ },
+ "rady/poistenie-na-hory-a-lyzovacku": {
+  "hash": "1f569f9bb48653af",
+  "date": "2026-11-13"
+ },
+ "rady/nehoda-autom": {
+  "hash": "db36ca0f4784775c",
+  "date": "2026-11-13"
+ },
+ "rady/vytopenie-bytu": {
+  "hash": "351d41a184349f80",
+  "date": "2026-11-13"
+ },
+ "rady/poistenie-domacnosti-spisska-nova-ves": {
+  "hash": "62a37a7d971e59f9",
+  "date": "2026-11-13"
+ },
+ "rady/vypoved-pzp": {
+  "hash": "74a5a34e7655a805",
+  "date": "2026-11-13"
+ },
+ "rady/pzp-spisska-nova-ves": {
+  "hash": "216113384cff0f63",
+  "date": "2026-11-13"
+ },
+ "rady/podmienky": {
+  "hash": "83cad509f56ee436",
+  "date": "2026-11-13"
+ },
+ "rady/cena": {
+  "hash": "a600e7f5db6e33d2",
+  "date": "2026-11-13"
+ },
+ "rady/auto-udaje": {
+  "hash": "8fcae464c66d4156",
+  "date": "2026-11-13"
+ },
+ "rady/byvanie": {
+  "hash": "ce71071f265b5b92",
+  "date": "2026-11-13"
+ },
+ "rady/cesta": {
+  "hash": "2137c4f343acd116",
+  "date": "2026-11-13"
+ },
+ "rady/praca": {
+  "hash": "86b44f5086c92a7f",
+  "date": "2026-11-13"
+ },
+ "rady/zmena": {
+  "hash": "c8252d1913b01205",
+  "date": "2026-11-13"
+ },
+ "rady/dokumenty": {
+  "hash": "da500c62fe08d462",
+  "date": "2026-11-13"
+ },
+ "rady/vyrocie": {
+  "hash": "43a7e41eaa656de4",
+  "date": "2026-11-13"
+ }
+}
