@@ -131,7 +131,7 @@ function bindClaim() {
 }
 
 /* ---------- 2. Compare two contracts ---------- */
-function comparePage() { return `<div class="page-shell wrap tool-page">${toolIntro('Porovnanie zmlúv', 'Nová ponuka<br><em>vedľa tej starej.</em>', 'Nahrajte svoju súčasnú zmluvu a novú ponuku. Prehľadne ukážeme, čo by ste prechodom získali, čo stratili a čo si treba overiť. Zadarmo a nezáväzne.')}<div id="compare-flow"></div></div>`; }
+function comparePage() { return `<div class="page-shell wrap tool-page">${toolIntro('Porovnanie zmlúv', 'Nová ponuka<br><em>vedľa tej starej.</em>', 'Nahrajte svoju súčasnú zmluvu a novú ponuku. Prehľadne ukážeme, čo by ste prechodom získali, čo stratili a čo si treba overiť. Zadarmo a nezáväzne.')}<h2 class="sr-only">Porovnanie dvoch dokumentov</h2><div id="compare-flow"></div></div>`; }
 function bindCompare() {
  const root = document.querySelector('#compare-flow'); if (!root) return;
  let type = null, A = null, B = null, result = null;

@@ -431,3 +431,9 @@ a.path-row .path-ico{align-self:center}
 }
 /* main receives focus after in-site navigation; it is a landmark, not a control */
 main:focus{outline:none}
+/* headings for screen readers where the visual layout already makes the grouping clear */
+.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+/* Kontakt as the current page keeps the pill colours readable */
+nav a.nav-contact[aria-current]{color:#183748}
+[data-theme=dark] nav a.nav-contact[aria-current]{color:#e5efe5}
+footer .brand .brand-bottom{color:#b6cfae}
